@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { signUpSchema, type SignUpInput } from "@/lib/validators/auth";
-import { useAuthStore } from "@/stores/auth-store";
+import { signUpSchema, type SignUpInput } from "@/lib/validations/auth";
+import { useAuth } from "@/hooks";
 import { AuthCard } from "./auth-card";
 
 export function SignUpForm() {
   const router = useRouter();
-  const { isLoading, uiError, signUp, clearError } = useAuthStore();
+  const { isLoading, uiError, signUp, clearError } = useAuth();
 
   const form = useForm<SignUpInput>({
     resolver: zodResolver(signUpSchema),
@@ -31,7 +31,7 @@ export function SignUpForm() {
   async function onSubmit(values: SignUpInput) {
     clearError();
     const res = await signUp(values);
-    if (res.ok) router.push("/app");
+    if (res.ok) router.push("/dashboard");
   }
 
   const {

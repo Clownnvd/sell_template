@@ -32,8 +32,7 @@ const ServerEnvSchema = z.object({
 });
 
 const ClientEnvSchema = z.object({
-  // Example NEXT_PUBLIC vars (optional if you don't need yet):
-  // NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL"),
+  NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL"),
 });
 
 /**
@@ -72,8 +71,7 @@ export const serverEnv = (() => {
 
 export const clientEnv = (() => {
   const parsed = ClientEnvSchema.safeParse({
-    // Only map NEXT_PUBLIC_* here
-    // NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   });
 
   if (!parsed.success) {
