@@ -1,89 +1,94 @@
-# NextJS 16 SaaS Template
+# King Template - Production-Ready SaaS Starter Kit
 
-A production-ready SaaS template built with Next.js 16, Prisma, BetterAuth, and Stripe.
+Get complete access to King Template, a production-ready SaaS starter kit that gives you everything you need to launch your next project — authentication, payments, dashboard, and a stunning Ferrari-themed landing page included.
 
-## 🚀 Tech Stack
+This application delivers a seamless SaaS experience featuring:
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Next.js** | 16 (latest) | React framework with App Router |
-| **Prisma** | Latest | ORM for database operations |
-| **Neon** | - | Serverless PostgreSQL database |
-| **BetterAuth** | Latest | Authentication & session management |
-| **Resend** | Latest | Transactional email service |
-| **Stripe** | Latest | Payment processing & subscriptions |
-| **TypeScript** | 5.x | Type-safe development |
-| **Zod** | Latest | Schema validation |
-| **Tailwind CSS** | Latest | Utility-first CSS framework |
+## Product Management
 
-## ✨ Features
+- Subscription-based pricing with Free, Basic ($29/mo), and Pro ($99/mo) plans
+- Stripe integration for secure payment processing and customer portal
+- Webhook-driven payment event handling with signature verification and idempotency
+- Billing cycle toggle (monthly/yearly) with yearly savings
 
-- ✅ **Authentication System**
-  - Email/Password authentication
-  - Email verification
-  - Password reset flow
-  - Session management
-  - OAuth ready (Google, GitHub)
+## User Experience
 
-- ✅ **Subscription & Billing** (Ready to implement)
-  - Stripe integration setup
-  - Multiple pricing plans (Free, Basic, Pro, Enterprise)
-  - Usage limits per plan
-  - Subscription management
+- Ferrari-inspired luxury design theme (red/black/gold palette)
+- Beautiful landing page with hero, video demo, features, testimonials, pricing, FAQ sections
+- Horizontal logo marquee featuring real company brand SVGs (GitHub, Google, Vercel, Stripe, etc.)
+- Interactive Purchase dropdown with plan comparison in the header
+- Responsive design for mobile and desktop
+- Dark mode and light mode with smooth transitions
+- Multi-language support (English & Vietnamese)
+- Toast notifications for real-time status updates
 
-- ✅ **Email System**
-  - Transactional emails via Resend
-  - React Email templates
-  - Email logging
+## Technical Foundation
 
-- ✅ **Developer Experience**
-  - TypeScript throughout
-  - Zod validation schemas
-  - Reusable hooks (useAuth, usePassword)
-  - API response helpers
-  - Vercel Labs agent skills integration
+- Next.js 16 App Router architecture with Server Components
+- Secure authentication with Better Auth (email/password, GitHub, Google OAuth)
+- PostgreSQL database with Prisma ORM
+- Stripe for subscription billing and payment processing
+- Rate limiting and CSRF protection on all API endpoints
+- Zod schema validation on all inputs
+- Type-safe environment variable validation
+- Error boundaries at app, dashboard, and global levels
+- Security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
 
-## 📁 Project Structure
+Perfect for SaaS founders, indie hackers, and development teams who want to skip the boilerplate and ship faster. King Template demonstrates how modern web technologies can create premium, production-grade applications while maintaining a focus on beautiful presentation and user experience.
 
-```
-src/
-├── app/
-│   ├── (auth)/              # Authentication pages
-│   ├── (dashboard)/         # Protected dashboard pages
-│   ├── (marketing)/         # Public marketing pages
-│   └── api/
-│       ├── auth/            # BetterAuth API routes
-│       ├── stripe/          # Stripe checkout & portal (ready)
-│       └── webhooks/        # Stripe webhooks (ready)
-├── components/
-│   ├── ui/                  # Base UI components
-│   ├── auth/                # Authentication forms
-│   └── dashboard/           # Dashboard components
-├── config/                  # Site, navigation, plans
-├── hooks/                   # React hooks (useAuth, usePassword)
-├── lib/
-│   ├── api/                 # API response helpers
-│   ├── auth/                # BetterAuth configuration
-│   ├── db/                  # Prisma client
-│   ├── email/               # Email service & templates
-│   ├── payment/             # Stripe setup (ready)
-│   └── validations/         # Zod schemas
-├── services/                # Business logic layer (ready)
-├── types/                   # TypeScript types
-└── utils/                   # Utility functions
-```
+---
 
-## 🛠️ Getting Started
+## Features
+
+### Core Technologies
+
+- **Next.js 16** App Router for server-side rendering, routing, and API endpoints with Server Components
+- **React 19** for building interactive user interfaces with reusable components
+- **Better Auth** for secure authentication with Email/Password, GitHub, and Google Sign-in
+- **ShadCN UI** for accessible, customizable React components
+- **PostgreSQL** with Prisma ORM for type-safe database operations
+- **Stripe** for subscription billing, checkout sessions, and customer portal
+- **TypeScript** for static typing and enhanced development experience
+- **Tailwind CSS 4** for utility-first, responsive styling with OKLCH color space
+- **Zod** for schema validation and form handling
+- **next-intl** for internationalization (EN/VI)
+- **Resend** for transactional emails with React Email templates
+
+### Application Features
+
+- Subscription management with plan upgrades/downgrades
+- Secure Stripe webhook processing with signature verification
+- Beautiful Ferrari-themed landing page with 9+ sections
+- Video demo section with YouTube embed
+- Interactive pricing page with billing cycle toggle
+- Dashboard with sidebar navigation, analytics, projects, team, and settings
+- OAuth social login (GitHub, Google) + email/password
+- Email verification and password reset flows
+- Rate limiting with configurable presets (API, auth, webhook)
+- CSRF protection with origin/referer validation
+- Responsive design for mobile and desktop
+- Dark/light mode toggle
+- Language switcher (English/Vietnamese)
+- Error boundaries and global error handling
+- Environment variable validation at startup
+- Production-ready deployment
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
 - Node.js >= 18.17
 - pnpm (recommended)
 - PostgreSQL database (Neon recommended)
+- Stripe account
 
-### 1. Install Dependencies
+### 1. Clone and Install
 
 ```bash
+git clone https://github.com/Clownnvd/king-template.git
+cd king-template
 pnpm install
 ```
 
@@ -107,10 +112,20 @@ EMAIL_FROM="noreply@yourdomain.com"
 STRIPE_SECRET_KEY="sk_test_xxxxxxxxxxxx"
 STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxx"
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_xxxxxxxxxxxx"
+NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY="price_..."
+NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY="price_..."
+NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY="price_..."
+NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY="price_..."
+
+# OAuth (optional)
+GITHUB_CLIENT_ID="..."
+GITHUB_CLIENT_SECRET="..."
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
 
 # App
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_APP_NAME="SaaS Template"
+NEXT_PUBLIC_APP_NAME="King Template"
 ```
 
 Generate auth secret:
@@ -121,32 +136,15 @@ openssl rand -base64 32
 ### 3. Database Setup
 
 ```bash
-# Generate Prisma Client
 pnpm prisma generate
-
-# Run migrations
-pnpm prisma migrate dev --name init
-
-# (Optional) Seed database
-pnpm prisma db seed
+pnpm prisma db push
 ```
 
 ### 4. Verify Setup
 
-Run the verification script to check your setup:
-
 ```bash
 pnpm verify
 ```
-
-This will check:
-- ✅ Environment variables
-- ✅ Database connection
-- ✅ Prisma Client generation
-- ✅ Email service configuration
-- ✅ Stripe configuration
-- ✅ Required dependencies
-- ✅ Critical file structure
 
 ### 5. Run Development Server
 
@@ -156,7 +154,53 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-## 📋 Available Scripts
+---
+
+## Project Structure
+
+```
+src/
+  app/
+    (auth)/              # Auth pages (sign-in, sign-up, verify-email)
+    (landing)/           # Landing page and pricing
+    api/
+      stripe/            # Stripe checkout & portal
+      user/              # User profile & subscription
+      webhooks/          # Stripe webhook handler
+    dashboard/           # Dashboard pages (billing, settings, projects, team, analytics)
+  components/
+    auth/                # Auth forms, OAuth buttons
+    dashboard/           # Sidebar, header, user menu, plans overlay
+    landing/             # Landing page sections (hero, features, video, pricing, etc.)
+      header/            # Landing header with Purchase dropdown
+    ui/                  # Shared UI (button, card, input, theme toggle, language switcher)
+  config/                # Plans and pricing configuration
+  hooks/                 # Custom hooks (useAuth, useSubscription, usePassword, useLocale)
+  i18n/                  # Internationalization config
+  lib/
+    auth/                # Better Auth configuration
+    payment/             # Stripe service and client
+    api/                 # API response helpers
+    db/                  # Prisma client
+    email/               # Email service with React Email templates
+    validations/         # Zod schemas
+  messages/              # Translation files (en.json, vi.json)
+  middleware.ts          # Security middleware (rate limiting, CSRF, headers)
+```
+
+---
+
+## Pricing Plans
+
+| Plan | Monthly | Yearly | Projects | Team Members | Storage |
+|------|---------|--------|----------|--------------|---------|
+| **Free** | $0 | $0 | 1 | 3 | 1 GB |
+| **Basic** | $29 | $290 | 5 | 10 | 10 GB |
+| **Pro** | $99 | $990 | Unlimited | 50 | 100 GB |
+
+---
+
+## Available Scripts
 
 ```bash
 pnpm dev          # Start development server
@@ -171,89 +215,42 @@ pnpm verify       # Verify project setup
 ```bash
 pnpm prisma studio              # Open Prisma Studio
 pnpm prisma generate            # Generate Prisma Client
+pnpm prisma db push             # Push schema to database
 pnpm prisma migrate dev         # Create and apply migration
-pnpm prisma db seed             # Seed database
 ```
 
-## 🎨 Customization
+---
 
-### Update Site Configuration
-
-Edit `src/config/site.ts`:
-
-```typescript
-export const siteConfig = {
-  name: "Your SaaS Name",
-  description: "Your description",
-  url: "https://yourdomain.com",
-};
-```
-
-### Modify Pricing Plans
-
-Edit `src/config/plans.ts` to add/modify subscription tiers.
-
-### Add Navigation Items
-
-Edit `src/config/navigation.ts` for menus.
-
-## 🔐 Authentication Flow
-
-1. **Sign Up** → Email verification → Dashboard
-2. **Sign In** → Check verification → Dashboard
-3. **Forgot Password** → Reset email → Reset password → Sign in
-
-## 💳 Pricing Plans
-
-| Plan | Monthly | Yearly | Limits |
-|------|---------|--------|--------|
-| **Free** | $0 | $0 | 1 project, 1 member |
-| **Basic** | $9 | $90 | 5 projects, 3 members |
-| **Pro** | $29 | $290 | 20 projects, 10 members |
-| **Enterprise** | $99 | $990 | Unlimited |
-
-## 🤖 Vercel Labs Agent Skills
-
-This project includes [Vercel Labs agent-skills](https://github.com/vercel-labs/agent-skills):
-
-- **vercel-react-best-practices**: 57+ React/Next.js optimization rules
-- **web-design-guidelines**: 100+ UI/UX/accessibility guidelines
-
-See [.agents/README.md](.agents/README.md) for details.
-
-## 🚀 Deployment
+## Deployment
 
 ### Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 
 1. Push to GitHub
 2. Import to Vercel
 3. Add environment variables
 4. Deploy!
 
-## 📚 Documentation
+---
 
-### Project Documentation
+## Acknowledgements
 
-- **[API Documentation](docs/API.md)** - Complete REST API reference
-  - Authentication endpoints
-  - Billing & subscription APIs
-  - Webhook handlers
-  - Request/response examples
-
-### External Documentation
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
-- [BetterAuth Documentation](https://better-auth.com)
-- [Stripe Documentation](https://stripe.com/docs)
-- [Resend Documentation](https://resend.com/docs)
-
-## 📄 License
-
-MIT License
+- [Next.js](https://nextjs.org) for the framework
+- [Better Auth](https://www.better-auth.com) for authentication
+- [Stripe](https://stripe.com) for payment processing
+- [Prisma](https://prisma.io) for database ORM
+- [Neon](https://neon.tech) for serverless PostgreSQL
+- [ShadCN UI](https://ui.shadcn.com) for UI components
+- [Tailwind CSS](https://tailwindcss.com) for styling
+- [Resend](https://resend.com) for transactional emails
+- [next-intl](https://next-intl-docs.vercel.app) for internationalization
+- [Lucide](https://lucide.dev) for icons
 
 ---
 
-Built with ❤️ using Next.js 16
+## License
+
+MIT
+
+---
+
+Built with love using Next.js 16, Tailwind CSS 4, and Stripe
