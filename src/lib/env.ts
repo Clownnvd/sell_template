@@ -21,18 +21,43 @@ function formatZodError(prefix: string, err: z.ZodError) {
 }
 
 const ServerEnvSchema = z.object({
-  // REQUIRED: used for DB access (Prisma/Neon/etc.)
+  // Database
   DATABASE_URL: z
     .string()
     .min(1, "DATABASE_URL is required (e.g. postgres://...)"),
 
-  // Add more server-only variables here when needed:
-  // SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "SUPABASE_SERVICE_ROLE_KEY is required"),
-  // STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY is required"),
+  // Authentication
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(16, "BETTER_AUTH_SECRET must be at least 16 characters"),
+
+  // OAuth - Google (optional)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
+  // OAuth - GitHub (optional)
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+
+  // Stripe
+  STRIPE_SECRET_KEY: z
+    .string()
+    .regex(/^sk_/, "STRIPE_SECRET_KEY must start with 'sk_'"),
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .regex(/^whsec_/, "STRIPE_WEBHOOK_SECRET must start with 'whsec_'"),
+
+  // Email (optional - only validate if provided)
+  RESEND_API_KEY: z
+    .string()
+    .optional(),
 });
 
 const ClientEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL"),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
+    .string()
+    .regex(/^pk_/, "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with 'pk_'"),
 });
 
 /**
@@ -45,22 +70,27 @@ export const serverEnv = (() => {
   // If this gets imported in the browser by mistake, crash with a clear message.
   if (typeof window !== "undefined") {
     throw new Error(
-      "❌ serverEnv was imported in a browser bundle. " +
+      "[ERROR] serverEnv was imported in a browser bundle. " +
         "Move this import to a Server Component / server-only module."
     );
   }
 
   const parsed = ServerEnvSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
-    // Map more vars here when you add them:
-    // SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    // STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   });
 
   if (!parsed.success) {
     throw new Error(
       formatZodError(
-        "❌ Invalid server environment variables. Fix your .env.local:",
+        "[ERROR] Invalid server environment variables. Fix your .env.local:",
         parsed.error
       )
     );
@@ -72,12 +102,13 @@ export const serverEnv = (() => {
 export const clientEnv = (() => {
   const parsed = ClientEnvSchema.safeParse({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   });
 
   if (!parsed.success) {
     throw new Error(
       formatZodError(
-        "❌ Invalid client environment variables. Fix your NEXT_PUBLIC_* vars:",
+        "[ERROR] Invalid client environment variables. Fix your NEXT_PUBLIC_* vars:",
         parsed.error
       )
     );

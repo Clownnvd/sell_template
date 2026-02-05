@@ -7,8 +7,8 @@ if (!process.env.STRIPE_SECRET_KEY) {
 /**
  * Server-side Stripe client
  * Use this in API routes and Server Actions
+ * Note: apiVersion is omitted to use SDK default (recommended)
  */
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-12-15.clover",
   typescript: true,
 });

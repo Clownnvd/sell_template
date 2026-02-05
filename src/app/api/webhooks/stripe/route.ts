@@ -59,12 +59,29 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   return null;
 }
 
-export async function POST(req: NextRequest) {
-  console.log("🔔 Webhook received!");
+/**
+ * Check if webhook event was already processed (deduplication)
+ */
+async function isEventProcessed(eventId: string): Promise<boolean> {
+  const existing = await prisma.webhookEvent.findUnique({
+    where: { id: eventId },
+  });
+  return !!existing;
+}
 
+/**
+ * Mark webhook event as processed
+ */
+async function markEventProcessed(eventId: string, eventType: string): Promise<void> {
+  await prisma.webhookEvent.create({
+    data: { id: eventId, type: eventType },
+  });
+}
+
+export async function POST(req: NextRequest) {
   const webhookSecret = getWebhookSecret();
   if (!webhookSecret) {
-    console.error("❌ STRIPE_WEBHOOK_SECRET is not set");
+    console.error("STRIPE_WEBHOOK_SECRET is not set");
     return NextResponse.json(
       { error: "STRIPE_WEBHOOK_SECRET is not set" },
       { status: 500 }
@@ -73,7 +90,6 @@ export async function POST(req: NextRequest) {
 
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
-    console.error("❌ Missing stripe-signature header");
     return NextResponse.json(
       { error: "Missing stripe-signature header" },
       { status: 400 }
@@ -85,10 +101,14 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    console.log("✅ Webhook verified, event type:", event.type);
   } catch (err) {
-    console.error("❌ Webhook signature verification failed:", err);
+    console.error("Webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  // Check for duplicate event (idempotency)
+  if (await isEventProcessed(event.id)) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   try {
@@ -123,15 +143,15 @@ export async function POST(req: NextRequest) {
         await handleInvoicePaymentFailed(invoice);
         break;
       }
-
-      default: {
-        console.log(`Unhandled event type: ${event.type}`);
-      }
     }
+
+    // Mark event as processed after successful handling
+    await markEventProcessed(event.id, event.type);
 
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Error processing webhook:", error);
+    // Return 500 so Stripe will retry the webhook
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -140,46 +160,30 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  console.log("🛒 handleCheckoutCompleted called");
   const userId = session.metadata?.userId ?? null;
-  console.log("🛒 userId from metadata:", userId);
 
   const subscriptionId =
     typeof session.subscription === "string"
       ? session.subscription
       : session.subscription?.id;
 
-  console.log("🛒 subscriptionId:", subscriptionId);
-  if (!subscriptionId) {
-    console.log("❌ No subscriptionId, returning early");
-    return;
-  }
+  if (!subscriptionId) return;
 
   const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
-  console.log("🛒 Retrieved subscription from Stripe");
 
   if (userId) {
-    console.log("🛒 Updating with userId from metadata");
     await updateSubscriptionFromStripe(userId, stripeSubscription);
     return;
   }
 
   const customerId = getCustomerId(stripeSubscription.customer);
-  console.log("🛒 customerId:", customerId);
-  if (!customerId) {
-    console.log("❌ No customerId, returning early");
-    return;
-  }
+  if (!customerId) return;
 
   const dbSubscription = await prisma.subscription.findFirst({
     where: { stripeCustomerId: customerId },
   });
-  console.log("🛒 dbSubscription found:", dbSubscription);
 
-  if (!dbSubscription) {
-    console.log("❌ No dbSubscription found, returning early");
-    return;
-  }
+  if (!dbSubscription) return;
 
   await updateSubscriptionFromStripe(dbSubscription.userId, stripeSubscription);
 }
@@ -254,11 +258,7 @@ async function updateSubscriptionFromStripe(
   userId: string,
   subscription: Stripe.Subscription
 ) {
-  console.log("📝 Updating subscription for userId:", userId);
   const priceId = subscription.items.data[0]?.price?.id ?? null;
-  console.log("📝 PriceId from Stripe:", priceId);
-  console.log("📝 ENV BASIC_MONTHLY:", process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY);
-  console.log("📝 ENV PRO_MONTHLY:", process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY);
 
   let plan: "FREE" | "BASIC" | "PRO" = "FREE";
   if (priceId) {
@@ -274,7 +274,6 @@ async function updateSubscriptionFromStripe(
       plan = "PRO";
     }
   }
-  console.log("📝 Determined plan:", plan);
 
   let status: "ACTIVE" | "CANCELED" | "PAST_DUE" | "UNPAID" | "TRIALING" =
     "ACTIVE";
@@ -297,14 +296,11 @@ async function updateSubscriptionFromStripe(
   }
 
   const customerId = getCustomerId(subscription.customer);
-  if (!customerId) {
-    // Don't create/update a row without a customer id (it breaks later lookups)
-    return;
-  }
+  if (!customerId) return;
 
   const { currentPeriodStart, currentPeriodEnd } = getPeriodDates(subscription);
 
-  const result = await prisma.subscription.upsert({
+  await prisma.subscription.upsert({
     where: { userId },
     update: {
       plan,
@@ -328,7 +324,6 @@ async function updateSubscriptionFromStripe(
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     },
   });
-  console.log("✅ Subscription updated in DB:", result);
 }
 
 

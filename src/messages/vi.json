@@ -1,0 +1,496 @@
+{
+  "common": {
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "create": "Tạo mới",
+    "submit": "Gửi",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước đó",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "sort": "Sắp xếp",
+    "all": "Tất cả",
+    "none": "Không có",
+    "yes": "Có",
+    "no": "Không",
+    "or": "hoặc",
+    "and": "và",
+    "learnMore": "Tìm hiểu thêm",
+    "getStarted": "Bắt đầu",
+    "viewAll": "Xem tất cả",
+    "close": "Đóng"
+  },
+  "navigation": {
+    "home": "Trang chủ",
+    "features": "Tính năng",
+    "pricing": "Bảng giá",
+    "faq": "Câu hỏi thường gặp",
+    "docs": "Tài liệu",
+    "blog": "Blog",
+    "contact": "Liên hệ",
+    "dashboard": "Bảng điều khiển",
+    "settings": "Cài đặt",
+    "billing": "Thanh toán",
+    "profile": "Hồ sơ",
+    "signIn": "Đăng nhập",
+    "signUp": "Đăng ký",
+    "signOut": "Đăng xuất"
+  },
+  "landing": {
+    "logos": {
+      "title": "Được tin dùng bởi các đội xây dựng sản phẩm hiện đại"
+    },
+    "pricingTeaser": {
+      "badge": "Bảng giá",
+      "title": "Bảng giá đơn giản",
+      "description": "Bắt đầu miễn phí. Nâng cấp khi sẵn sàng. Hủy bất cứ lúc nào.",
+      "viewDetails": "Xem chi tiết",
+      "enterprise": "Cần gói Enterprise?",
+      "talkToSales": "Liên hệ sales",
+      "plans": {
+        "free": {
+          "name": "Miễn phí",
+          "price": "$0",
+          "note": "Để bắt đầu",
+          "features": ["1 dự án", "Tối đa 3 thành viên", "Hỗ trợ cộng đồng"]
+        },
+        "basic": {
+          "name": "Cơ bản",
+          "price": "$29",
+          "note": "Mỗi tháng",
+          "badge": "Phổ biến nhất",
+          "features": ["3 dự án", "Tối đa 10 thành viên", "Hỗ trợ email"]
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$99",
+          "note": "Mỗi tháng",
+          "features": ["Không giới hạn dự án", "Tối đa 50 thành viên", "Hỗ trợ ưu tiên"]
+        }
+      }
+    },
+    "hero": {
+      "badge": "Next.js 16 • Prisma • BetterAuth • Stripe",
+      "title": "Xây dựng",
+      "titleHighlight": "SaaS nhanh hơn",
+      "titleEnd": "không cần setup phức tạp",
+      "description": "Template production-ready với xác thực, thanh toán và dashboard hoàn chỉnh. Ra mắt sản phẩm trong vài ngày, không phải vài tuần.",
+      "cta": "Bắt đầu miễn phí",
+      "ctaSecondary": "Xem bảng giá",
+      "features": {
+        "secureAuth": "Xác thực bảo mật",
+        "stripeBilling": "Thanh toán Stripe",
+        "readyToDeploy": "Sẵn sàng deploy"
+      },
+      "preview": {
+        "title": "Xem trước Dashboard",
+        "live": "Trực tiếp",
+        "monthlyRevenue": "Doanh thu tháng",
+        "activeUsers": "Người dùng hoạt động",
+        "conversion": "Tỷ lệ chuyển đổi",
+        "vsLastMonth": "+18.2% so với tháng trước",
+        "thisWeek": "+124 tuần này",
+        "industryAvg": "Trung bình ngành: 2.1%",
+        "revenueOverview": "Tổng quan doanh thu",
+        "last7Days": "7 ngày qua",
+        "integrations": "Tích hợp",
+        "connectTools": "Kết nối công cụ yêu thích",
+        "connect": "Kết nối",
+        "paymentReceived": "Đã nhận thanh toán",
+        "newSignup": "Đăng ký mới"
+      },
+      "days": {
+        "mon": "T2",
+        "tue": "T3",
+        "wed": "T4",
+        "thu": "T5",
+        "fri": "T6",
+        "sat": "T7",
+        "sun": "CN"
+      }
+    },
+    "features": {
+      "badge": "Tính năng",
+      "title": "Mọi thứ bạn cần cho một",
+      "titleHighlight": "SaaS thực sự",
+      "description": "Bắt đầu với nền tảng vững chắc: xác thực, thanh toán, nhóm và hệ thống UI sạch sẽ — đã được kết nối sẵn.",
+      "bottomCta": "Và còn nhiều hơn nữa — xem",
+      "documentation": "tài liệu",
+      "bottomCtaEnd": "để biết mọi thứ bao gồm.",
+      "items": {
+        "auth": {
+          "title": "Xác thực hoạt động ngay",
+          "description": "Email/mật khẩu, magic links, sessions và cài đặt bảo mật mặc định qua BetterAuth."
+        },
+        "billing": {
+          "title": "Stripe subscriptions tích hợp sẵn",
+          "description": "Checkout, customer portal, webhooks và phân cấp plan cho các gói giá SaaS."
+        },
+        "limits": {
+          "title": "Giới hạn sử dụng & quota",
+          "description": "Áp dụng giới hạn plan và quyền truy cập tính năng với helpers đơn giản."
+        },
+        "dx": {
+          "title": "DX cấp production",
+          "description": "Typed routes, TypeScript nghiêm ngặt, cấu trúc thư mục sạch và UI primitives tái sử dụng."
+        },
+        "security": {
+          "title": "Bảo mật mặc định",
+          "description": "Server-first patterns, protected routes và middleware configuration hợp lý."
+        },
+        "growth": {
+          "title": "Sẵn sàng mở rộng",
+          "description": "Thêm tính năng nhanh với composable components và data modeling có thể mở rộng."
+        }
+      }
+    },
+    "howItWorks": {
+      "badge": "Cách hoạt động",
+      "title": "Chạy trong",
+      "titleHighlight": "vài phút",
+      "description": "Đưa SaaS của bạn lên mạng chỉ với vài bước. Không cần setup phức tạp.",
+      "steps": {
+        "clone": {
+          "title": "Clone template",
+          "description": "Bắt đầu với codebase production-ready."
+        },
+        "configure": {
+          "title": "Cấu hình services",
+          "description": "Thêm credentials Stripe và database."
+        },
+        "customize": {
+          "title": "Tùy chỉnh & deploy",
+          "description": "Làm theo ý bạn và đưa lên production."
+        }
+      }
+    },
+    "pricing": {
+      "badge": "Bảng giá",
+      "title": "Bảng giá",
+      "titleHighlight": "minh bạch",
+      "titleEnd": "đơn giản",
+      "description": "Chọn gói phù hợp với bạn. Tất cả các gói đều có đảm bảo hoàn tiền 14 ngày.",
+      "monthly": "Hàng tháng",
+      "yearly": "Hàng năm",
+      "yearlyDiscount": "Tiết kiệm 20%",
+      "perMonth": "/tháng",
+      "perYear": "/năm",
+      "currentPlan": "Gói hiện tại",
+      "getStarted": "Bắt đầu",
+      "contactSales": "Liên hệ sales",
+      "mostPopular": "Phổ biến nhất",
+      "features": "Tính năng",
+      "manage": "Quản lý",
+      "upgradeTo": "Nâng cấp lên {plan}",
+      "redirecting": "Đang chuyển hướng...",
+      "faqTitle": "Câu hỏi thường gặp",
+      "stillHaveQuestions": "Vẫn còn câu hỏi?",
+      "helpFindPlan": "Đội ngũ của chúng tôi sẵn sàng giúp bạn tìm gói phù hợp",
+      "contactUs": "Liên hệ",
+      "plans": {
+        "free": {
+          "name": "Miễn phí",
+          "description": "Cho cá nhân mới bắt đầu"
+        },
+        "basic": {
+          "name": "Cơ bản",
+          "description": "Cho nhóm nhỏ và dự án"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "Cho doanh nghiệp đang phát triển"
+        }
+      }
+    },
+    "testimonials": {
+      "badge": "Đánh giá",
+      "title": "Được yêu thích bởi",
+      "titleHighlight": "developers",
+      "description": "Xem những gì người khác nói về King Template."
+    },
+    "faq": {
+      "badge": "FAQ",
+      "title": "Câu hỏi",
+      "titleHighlight": "thường gặp",
+      "description": "Mọi thứ bạn cần biết về King Template. Không tìm thấy câu trả lời? Liên hệ đội hỗ trợ.",
+      "contactSupport": "Liên hệ hỗ trợ",
+      "items": {
+        "changePlan": {
+          "q": "Tôi có thể đổi gói sau không?",
+          "a": "Có. Bạn có thể nâng cấp hoặc hạ cấp bất cứ lúc nào. Thay đổi áp dụng cho chu kỳ thanh toán tiếp theo. Chúng tôi giúp bạn dễ dàng điều chỉnh khi nhu cầu thay đổi."
+        },
+        "paymentMethods": {
+          "q": "Bạn chấp nhận phương thức thanh toán nào?",
+          "a": "Tất cả thẻ lớn qua Stripe bao gồm Visa, MasterCard, American Express và nhiều hơn nữa. Bạn cũng có thể quản lý hóa đơn và subscriptions từ customer portal."
+        },
+        "refunds": {
+          "q": "Bạn có hoàn tiền không?",
+          "a": "Với gói trả phí, chúng tôi có đảm bảo hoàn tiền 14 ngày. Nếu không hài lòng, liên hệ hỗ trợ và chúng tôi sẽ xử lý hoàn tiền - không hỏi lý do."
+        },
+        "production": {
+          "q": "Template này có sẵn sàng cho production không?",
+          "a": "Chắc chắn. Nó được thiết kế với production patterns: server-first routing, protected pages, Stripe webhooks, xác thực bảo mật và data model có thể mở rộng."
+        },
+        "selfHost": {
+          "q": "Tôi có thể self-host không?",
+          "a": "Có. Deploy trên Vercel, Railway, VPS hoặc bất kỳ Node platform nào hỗ trợ Next.js và database bạn chọn (khuyến nghị PostgreSQL)."
+        },
+        "support": {
+          "q": "Bạn có cung cấp hỗ trợ không?",
+          "a": "Có! Người dùng gói miễn phí được hỗ trợ cộng đồng qua GitHub Discussions. Gói trả phí bao gồm hỗ trợ email với thời gian phản hồi nhanh hơn."
+        }
+      }
+    },
+    "cta": {
+      "title": "Sẵn sàng xây dựng",
+      "titleHighlight": "SaaS",
+      "titleEnd": "của bạn?",
+      "description": "Bắt đầu với template production-ready và ship nhanh hơn.",
+      "button": "Bắt đầu miễn phí",
+      "noCreditCard": "Không cần thẻ tín dụng"
+    },
+    "footer": {
+      "description": "Template SaaS production-ready được xây dựng với Next.js, Prisma, BetterAuth và Stripe.",
+      "product": "Sản phẩm",
+      "resources": "Tài nguyên",
+      "company": "Công ty",
+      "legal": "Pháp lý",
+      "allRightsReserved": "Bảo lưu mọi quyền.",
+      "links": {
+        "features": "Tính năng",
+        "pricing": "Bảng giá",
+        "changelog": "Nhật ký thay đổi",
+        "roadmap": "Lộ trình",
+        "docs": "Tài liệu",
+        "guides": "Hướng dẫn",
+        "apiReference": "Tham chiếu API",
+        "support": "Hỗ trợ",
+        "about": "Về chúng tôi",
+        "blog": "Blog",
+        "careers": "Tuyển dụng",
+        "contact": "Liên hệ",
+        "privacy": "Chính sách bảo mật",
+        "terms": "Điều khoản dịch vụ",
+        "cookies": "Chính sách Cookie"
+      }
+    }
+  },
+  "auth": {
+    "oauth": {
+      "orContinueWith": "hoặc tiếp tục với",
+      "connecting": "Đang kết nối...",
+      "continueWith": {
+        "google": "Tiếp tục với Google",
+        "github": "Tiếp tục với GitHub"
+      },
+      "signUpWith": {
+        "google": "Đăng ký với Google",
+        "github": "Đăng ký với GitHub"
+      },
+      "error": {
+        "title": "Lỗi OAuth",
+        "generic": "Không thể đăng nhập với nhà cung cấp này. Vui lòng thử lại.",
+        "accountExists": "Tài khoản với email này đã tồn tại. Vui lòng đăng nhập bằng phương thức ban đầu."
+      }
+    },
+    "signIn": {
+      "title": "Chào mừng trở lại",
+      "description": "Đăng nhập vào tài khoản để tiếp tục",
+      "email": "Địa chỉ email",
+      "emailPlaceholder": "ban@example.com",
+      "password": "Mật khẩu",
+      "passwordPlaceholder": "Nhập mật khẩu",
+      "forgotPassword": "Quên mật khẩu?",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập...",
+      "redirecting": "Đang chuyển hướng...",
+      "noAccount": "Chưa có tài khoản King Template?",
+      "createAccount": "Tạo tài khoản",
+      "error": {
+        "title": "Xác thực thất bại",
+        "invalid": "Email hoặc mật khẩu không đúng"
+      }
+    },
+    "signUp": {
+      "title": "Tạo tài khoản",
+      "description": "Bắt đầu với tài khoản miễn phí",
+      "name": "Họ và tên",
+      "namePlaceholder": "Nguyễn Văn A",
+      "email": "Địa chỉ email",
+      "emailPlaceholder": "ban@example.com",
+      "password": "Mật khẩu",
+      "passwordPlaceholder": "Tạo mật khẩu",
+      "confirmPassword": "Xác nhận mật khẩu",
+      "confirmPasswordPlaceholder": "Xác nhận mật khẩu của bạn",
+      "submit": "Tạo tài khoản",
+      "submitting": "Đang tạo tài khoản...",
+      "redirecting": "Đang chuyển hướng...",
+      "hasAccount": "Đã có tài khoản?",
+      "signIn": "Đăng nhập",
+      "terms": "Bằng cách tạo tài khoản, bạn đồng ý với",
+      "termsLink": "Điều khoản dịch vụ",
+      "privacyLink": "Chính sách bảo mật",
+      "error": {
+        "title": "Đăng ký thất bại",
+        "emailExists": "Email này đã được sử dụng"
+      }
+    },
+    "forgotPassword": {
+      "title": "Quên mật khẩu?",
+      "description": "Nhập email và chúng tôi sẽ gửi link đặt lại",
+      "email": "Địa chỉ email",
+      "emailPlaceholder": "ban@example.com",
+      "submit": "Gửi link đặt lại",
+      "submitting": "Đang gửi...",
+      "success": {
+        "title": "Kiểm tra email",
+        "description": "Chúng tôi đã gửi link đặt lại mật khẩu đến email của bạn."
+      },
+      "backToSignIn": "Quay lại đăng nhập"
+    },
+    "resetPassword": {
+      "title": "Đặt lại mật khẩu",
+      "description": "Nhập mật khẩu mới của bạn",
+      "password": "Mật khẩu mới",
+      "passwordPlaceholder": "Nhập mật khẩu mới",
+      "confirmPassword": "Xác nhận mật khẩu",
+      "confirmPasswordPlaceholder": "Xác nhận mật khẩu mới",
+      "submit": "Đặt lại mật khẩu",
+      "submitting": "Đang đặt lại...",
+      "success": {
+        "title": "Đặt lại mật khẩu thành công",
+        "description": "Mật khẩu đã được cập nhật. Bạn có thể đăng nhập ngay."
+      },
+      "signIn": "Đăng nhập"
+    },
+    "verifyEmail": {
+      "title": "Xác minh email",
+      "description": "Vui lòng xác minh email để tiếp tục",
+      "verifying": "Đang xác minh email...",
+      "success": {
+        "title": "Email đã xác minh",
+        "description": "Email đã được xác minh. Bạn có thể đăng nhập ngay."
+      },
+      "error": {
+        "title": "Xác minh thất bại",
+        "description": "Link xác minh không hợp lệ hoặc đã hết hạn."
+      },
+      "resend": "Gửi lại email xác minh",
+      "signIn": "Đăng nhập"
+    },
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu"
+  },
+  "dashboard": {
+    "title": "Bảng điều khiển",
+    "welcome": "Chào mừng trở lại",
+    "overview": "Tổng quan",
+    "recentActivity": "Hoạt động gần đây",
+    "quickActions": "Thao tác nhanh",
+    "sidebar": {
+      "dashboard": "Bảng điều khiển",
+      "analytics": "Phân tích",
+      "projects": "Dự án",
+      "team": "Nhóm",
+      "billing": "Thanh toán",
+      "settings": "Cài đặt",
+      "help": "Trợ giúp & Hỗ trợ",
+      "account": "Tài khoản",
+      "profile": "Hồ sơ"
+    },
+    "stats": {
+      "totalRevenue": "Tổng doanh thu",
+      "activeUsers": "Người dùng hoạt động",
+      "newSignups": "Đăng ký mới",
+      "conversionRate": "Tỷ lệ chuyển đổi"
+    },
+    "analytics": {
+      "title": "Phân tích",
+      "description": "Theo dõi các chỉ số và hiệu suất quan trọng"
+    },
+    "projects": {
+      "title": "Dự án",
+      "description": "Quản lý dự án và công việc",
+      "create": "Tạo dự án",
+      "empty": "Chưa có dự án",
+      "emptyDescription": "Bắt đầu bằng cách tạo dự án đầu tiên"
+    },
+    "team": {
+      "title": "Nhóm",
+      "description": "Quản lý thành viên nhóm",
+      "invite": "Mời thành viên",
+      "members": "Thành viên",
+      "pending": "Lời mời đang chờ",
+      "empty": "Chưa có thành viên"
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "description": "Quản lý cài đặt tài khoản",
+      "profile": {
+        "title": "Hồ sơ",
+        "description": "Cập nhật thông tin hồ sơ",
+        "name": "Tên",
+        "email": "Email",
+        "avatar": "Ảnh đại diện",
+        "save": "Lưu thay đổi"
+      },
+      "account": {
+        "title": "Tài khoản",
+        "description": "Quản lý cài đặt tài khoản",
+        "deleteAccount": "Xóa tài khoản",
+        "deleteWarning": "Hành động này không thể hoàn tác. Điều này sẽ xóa vĩnh viễn tài khoản và dữ liệu của bạn khỏi máy chủ."
+      }
+    },
+    "billing": {
+      "title": "Thanh toán",
+      "description": "Quản lý subscription và thanh toán",
+      "currentPlan": "Gói hiện tại",
+      "nextBilling": "Ngày thanh toán tiếp theo",
+      "changePlan": "Đổi gói",
+      "cancelSubscription": "Hủy subscription",
+      "resumeSubscription": "Tiếp tục subscription",
+      "paymentMethod": "Phương thức thanh toán",
+      "updatePayment": "Cập nhật thanh toán",
+      "invoices": "Hóa đơn",
+      "viewInvoice": "Xem hóa đơn",
+      "manageSubscription": "Quản lý subscription"
+    },
+    "help": {
+      "title": "Trợ giúp & Hỗ trợ",
+      "description": "Nhận trợ giúp với King Template",
+      "docs": "Tài liệu",
+      "docsDescription": "Đọc tài liệu đầy đủ",
+      "contact": "Liên hệ hỗ trợ",
+      "contactDescription": "Liên hệ với đội hỗ trợ",
+      "faq": "FAQ",
+      "faqDescription": "Tìm câu trả lời cho câu hỏi thường gặp"
+    }
+  },
+  "errors": {
+    "generic": "Đã xảy ra lỗi. Vui lòng thử lại.",
+    "notFound": "Không tìm thấy trang",
+    "notFoundDescription": "Trang bạn tìm không tồn tại.",
+    "unauthorized": "Không có quyền",
+    "unauthorizedDescription": "Bạn không có quyền truy cập trang này.",
+    "serverError": "Lỗi máy chủ",
+    "serverErrorDescription": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.",
+    "networkError": "Lỗi mạng",
+    "networkErrorDescription": "Vui lòng kiểm tra kết nối internet và thử lại.",
+    "goHome": "Về trang chủ",
+    "tryAgain": "Thử lại"
+  },
+  "validation": {
+    "required": "Trường này bắt buộc",
+    "email": "Vui lòng nhập email hợp lệ",
+    "minLength": "Phải có ít nhất {min} ký tự",
+    "maxLength": "Tối đa {max} ký tự",
+    "passwordMatch": "Mật khẩu không khớp",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng"
+  }
+}

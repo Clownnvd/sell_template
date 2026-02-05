@@ -1,55 +1,99 @@
-const faqs = [
-  {
-    q: "Can I change my plan later?",
-    a: "Yes. You can upgrade or downgrade anytime. Changes apply to your next billing cycle.",
-  },
-  {
-    q: "What payment methods do you accept?",
-    a: "All major cards via Stripe. You can also manage invoices and subscriptions from the customer portal.",
-  },
-  {
-    q: "Do you offer refunds?",
-    a: "For paid plans, you can offer a money-back guarantee policy. Implement it through your support flow and Stripe settings.",
-  },
-  {
-    q: "Is this template production-ready?",
-    a: "It’s designed with production patterns: server-first routing, protected pages, Stripe webhooks, and a scalable org model.",
-  },
-  {
-    q: "Can I self-host?",
-    a: "Yes. Deploy on Vercel, a VPS, or any Node platform that supports Next.js and your database.",
-  },
-];
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { ChevronDown, HelpCircle } from "lucide-react";
+
+import { cn } from "@/utils/cn";
+
+type FAQKey = "changePlan" | "paymentMethods" | "refunds" | "production" | "selfHost" | "support";
+
+const faqKeys: FAQKey[] = ["changePlan", "paymentMethods", "refunds", "production", "selfHost", "support"];
+
+function FAQItem({ question, answer, isOpen, onToggle }: {
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className={cn("border-b border-border/50 last:border-0", isOpen && "border-red-500/20")}>
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-red-600 dark:hover:text-red-400 sm:py-6"
+      >
+        <span className="font-medium">{question}</span>
+        <ChevronDown
+          className={cn(
+            "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
+            isOpen && "rotate-180 text-red-600 dark:text-red-400"
+          )}
+        />
+      </button>
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-in-out",
+          isOpen ? "grid-rows-[1fr] pb-6" : "grid-rows-[0fr]"
+        )}
+      >
+        <div className="overflow-hidden">
+          <p className="leading-relaxed text-muted-foreground pr-12">{answer}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function FAQSection() {
-  return (
-    <section id="faq" className="scroll-mt-24">
-      <div className="container mx-auto max-w-7xl px-4 py-16 md:py-24">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            FAQ
-          </h2>
-          <p className="mt-4 text-base text-muted-foreground md:text-lg">
-            Quick answers to common questions.
-          </p>
-        </div>
+  const t = useTranslations("landing.faq");
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-        <div className="mx-auto mt-12 max-w-3xl divide-y divide-border rounded-2xl border border-border bg-card">
-          {faqs.map((item) => (
-            <details key={item.q} className="group p-6">
-              <summary className="cursor-pointer list-none select-none">
-                <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-sm font-semibold">{item.q}</h3>
-                  <span className="text-muted-foreground transition group-open:rotate-45">
-                    +
-                  </span>
-                </div>
-              </summary>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {item.a}
-              </p>
-            </details>
-          ))}
+  return (
+    <section id="faq" className="relative scroll-mt-24 overflow-hidden bg-muted/20">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-red-500/5 blur-[100px]" />
+      </div>
+
+      <div className="container mx-auto max-w-7xl px-4 py-20 md:py-32">
+        <div className="grid gap-12 lg:grid-cols-5 lg:gap-16">
+          <div className="lg:col-span-2">
+            <div className="sticky top-24">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/5 px-4 py-2 text-sm font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
+                <HelpCircle className="h-4 w-4" />
+                {t("badge")}
+              </div>
+              <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                {t("title")}{" "}
+                <span className="bg-linear-to-r from-red-600 via-red-500 to-amber-500 bg-clip-text text-transparent dark:from-red-500 dark:to-amber-400">
+                  {t("titleHighlight")}
+                </span>
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">{t("description")}</p>
+
+              <div className="mt-8">
+                <a
+                  href="/contact"
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                >
+                  {t("contactSupport")}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-3">
+            <div className="rounded-2xl border border-border/50 bg-card/50 px-6 shadow-card backdrop-blur-sm">
+              {faqKeys.map((key, index) => (
+                <FAQItem
+                  key={key}
+                  question={t(`items.${key}.q`)}
+                  answer={t(`items.${key}.a`)}
+                  isOpen={openIndex === index}
+                  onToggle={() => setOpenIndex(openIndex === index ? null : index)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>

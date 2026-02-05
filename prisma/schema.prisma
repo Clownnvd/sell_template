@@ -128,3 +128,12 @@ model Subscription {
   @@index([status])
   @@map("subscription")
 }
+
+model WebhookEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+
+  @@index([type])
+  @@map("webhook_event")
+}

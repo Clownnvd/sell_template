@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
+import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  // Rate limiting: 20 requests per minute
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "subscription");
+  if (rateLimitResult) return rateLimitResult;
   const session = await auth.api.getSession({
     headers: req.headers,
   });

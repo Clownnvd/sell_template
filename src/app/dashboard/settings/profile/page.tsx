@@ -47,8 +47,8 @@ export default function ProfilePage() {
             avatarUrl: userData.avatarUrl || "",
           });
         }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
+      } catch {
+        // Failed to fetch user - will show empty state
       } finally {
         setIsLoading(false);
       }
@@ -62,7 +62,10 @@ export default function ProfilePage() {
     try {
       const response = await fetch("/api/user/profile", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "fetch",
+        },
         body: JSON.stringify(data),
       });
 
@@ -82,7 +85,7 @@ export default function ProfilePage() {
           message: error.error || "Failed to update profile",
         });
       }
-    } catch (error) {
+    } catch {
       addNotification({
         type: "error",
         title: "Error",

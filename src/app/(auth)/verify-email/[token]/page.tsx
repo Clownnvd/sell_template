@@ -48,7 +48,7 @@ export default function VerifyEmailPage({ params }: VerifyEmailPageProps) {
             setError(data.error || "Verification failed");
           }
         }
-      } catch (err) {
+      } catch {
         setState("error");
         setError("An unexpected error occurred");
       }
@@ -68,7 +68,7 @@ export default function VerifyEmailPage({ params }: VerifyEmailPageProps) {
       } else {
         alert("Failed to resend email. Please try again.");
       }
-    } catch (err) {
+    } catch {
       alert("An error occurred. Please try again.");
     }
   };

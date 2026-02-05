@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/server";
 import { createCheckoutSession } from "@/lib/payment/service";
 import { createCheckoutSchema } from "@/lib/validations/billing";
+import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { verifyCsrf } from "@/lib/csrf";
 import {
   successResponse,
   errorResponse,
@@ -10,6 +12,14 @@ import {
 } from "@/lib/api/response";
 
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResult = verifyCsrf(req);
+  if (csrfResult) return csrfResult;
+
+  // Rate limiting: 5 requests per minute for checkout
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "checkout");
+  if (rateLimitResult) return rateLimitResult;
+
   try {
     // Require authentication
     const session = await requireAuth();
@@ -44,8 +54,6 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ url: checkoutSession.url });
   } catch (error) {
-    console.error("Checkout error:", error);
-
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       return errorResponse("Unauthorized", 401);
     }

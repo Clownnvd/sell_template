@@ -14,7 +14,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: false, // Set to true when RESEND_API_KEY is configured
 
     sendResetPassword: async ({ user, url }) => {
       sendReactEmailSafe({
@@ -44,4 +44,30 @@ export const auth = betterAuth({
       });
     },
   },
+
+  // OAuth providers - configured via environment variables
+  // Set GOOGLE_CLIENT_ID/SECRET and GITHUB_CLIENT_ID/SECRET to enable
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    },
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID ?? "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
+      enabled: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+    },
+  },
+
+  // Account linking - allow users to link multiple OAuth accounts
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "github"],
+    },
+  },
 });
+
+// Export auth types for use in the app
+export type Session = typeof auth.$Infer.Session;

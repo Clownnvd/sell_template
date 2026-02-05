@@ -3,44 +3,78 @@ import prisma from "@/lib/db";
 import { plans, type PlanKey } from "@/config/plans";
 
 /**
+ * Get all valid Stripe price IDs from environment
+ */
+function getValidPriceIds(): Set<string> {
+  const priceIds = new Set<string>();
+
+  const envKeys = [
+    "NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY",
+    "NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY",
+    "NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY",
+    "NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY",
+  ];
+
+  for (const key of envKeys) {
+    const value = process.env[key];
+    if (value && value.startsWith("price_")) {
+      priceIds.add(value);
+    }
+  }
+
+  return priceIds;
+}
+
+/**
+ * Validate that a price ID is configured and valid
+ */
+export function isValidPriceId(priceId: string): boolean {
+  return getValidPriceIds().has(priceId);
+}
+
+/**
  * Get or create Stripe customer for a user
+ * Uses transaction to prevent race condition creating duplicate customers
  */
 export async function getOrCreateStripeCustomer(
   userId: string,
   email: string,
   name?: string
 ): Promise<string> {
-  // Check if user already has a subscription with customer ID
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
+  // Use transaction to prevent race condition
+  return await prisma.$transaction(async (tx) => {
+    // Check if user already has a subscription with customer ID
+    const subscription = await tx.subscription.findUnique({
+      where: { userId },
+    });
+
+    if (subscription?.stripeCustomerId) {
+      return subscription.stripeCustomerId;
+    }
+
+    // Create new Stripe customer
+    const customer = await stripe.customers.create({
+      email,
+      name: name ?? undefined,
+      metadata: {
+        userId,
+      },
+    });
+
+    // Update or create subscription record
+    await tx.subscription.upsert({
+      where: { userId },
+      update: { stripeCustomerId: customer.id },
+      create: {
+        userId,
+        stripeCustomerId: customer.id,
+        plan: "FREE",
+        status: "ACTIVE",
+      },
+    });
+
+    return customer.id;
   });
-
-  if (subscription?.stripeCustomerId) {
-    return subscription.stripeCustomerId;
-  }
-
-  // Create new Stripe customer
-  const customer = await stripe.customers.create({
-    email,
-    name: name ?? undefined,
-    metadata: {
-      userId,
-    },
-  });
-
-  // Update or create subscription record
-  await prisma.subscription.upsert({
-    where: { userId },
-    update: { stripeCustomerId: customer.id },
-    create: {
-      userId,
-      stripeCustomerId: customer.id,
-      plan: "FREE",
-      status: "ACTIVE",
-    },
-  });
-
-  return customer.id;
 }
 
 /**
@@ -59,6 +93,11 @@ export async function createCheckoutSession({
   successUrl: string;
   cancelUrl: string;
 }): Promise<{ url: string | null }> {
+  // Validate priceId is configured
+  if (!isValidPriceId(priceId)) {
+    throw new Error(`Invalid or unconfigured price ID: ${priceId}`);
+  }
+
   const customerId = await getOrCreateStripeCustomer(userId, email);
 
   const session = await stripe.checkout.sessions.create({
@@ -107,42 +146,64 @@ export async function getSubscription(userId: string) {
 
 /**
  * Cancel subscription at period end
+ * @param userId - User ID for authorization
+ * @param subscriptionId - Stripe subscription ID
  */
-export async function cancelSubscription(subscriptionId: string): Promise<void> {
+export async function cancelSubscription(
+  userId: string,
+  subscriptionId: string
+): Promise<void> {
+  // Verify user owns this subscription (authorization check)
+  const subscription = await prisma.subscription.findFirst({
+    where: {
+      stripeSubscriptionId: subscriptionId,
+      userId: userId, // Must belong to this user
+    },
+  });
+
+  if (!subscription) {
+    throw new Error("Subscription not found or unauthorized");
+  }
+
   await stripe.subscriptions.update(subscriptionId, {
     cancel_at_period_end: true,
   });
 
-  const subscription = await prisma.subscription.findFirst({
-    where: { stripeSubscriptionId: subscriptionId },
+  await prisma.subscription.update({
+    where: { id: subscription.id },
+    data: { cancelAtPeriodEnd: true },
   });
-
-  if (subscription) {
-    await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: { cancelAtPeriodEnd: true },
-    });
-  }
 }
 
 /**
  * Resume a canceled subscription
+ * @param userId - User ID for authorization
+ * @param subscriptionId - Stripe subscription ID
  */
-export async function resumeSubscription(subscriptionId: string): Promise<void> {
+export async function resumeSubscription(
+  userId: string,
+  subscriptionId: string
+): Promise<void> {
+  // Verify user owns this subscription (authorization check)
+  const subscription = await prisma.subscription.findFirst({
+    where: {
+      stripeSubscriptionId: subscriptionId,
+      userId: userId, // Must belong to this user
+    },
+  });
+
+  if (!subscription) {
+    throw new Error("Subscription not found or unauthorized");
+  }
+
   await stripe.subscriptions.update(subscriptionId, {
     cancel_at_period_end: false,
   });
 
-  const subscription = await prisma.subscription.findFirst({
-    where: { stripeSubscriptionId: subscriptionId },
+  await prisma.subscription.update({
+    where: { id: subscription.id },
+    data: { cancelAtPeriodEnd: false },
   });
-
-  if (subscription) {
-    await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: { cancelAtPeriodEnd: false },
-    });
-  }
 }
 
 /**

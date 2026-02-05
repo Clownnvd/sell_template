@@ -6,19 +6,19 @@
  * and configurations are properly set up.
  *
  * Usage:
- *   npm run verify
+ *   pnpm run verify
  *   or
  *   npx tsx scripts/verify.ts
  */
 
 import "dotenv/config";
+import fs from "fs";
+import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Resend } from "resend";
-import Stripe from "stripe";
 
 // Colors for terminal output
-const colors = {
+const c = {
   reset: "\x1b[0m",
   bright: "\x1b[1m",
   red: "\x1b[31m",
@@ -26,427 +26,368 @@ const colors = {
   yellow: "\x1b[33m",
   blue: "\x1b[34m",
   cyan: "\x1b[36m",
-};
-
-const { green, red, yellow, blue, cyan, bright, reset } = colors;
+} as const;
 
 interface CheckResult {
   name: string;
   passed: boolean;
   message: string;
-  optional?: boolean;
+  optional: boolean;
 }
 
 const results: CheckResult[] = [];
 
 function header(text: string) {
-  console.log(`\n${bright}${blue}━━━ ${text} ━━━${reset}\n`);
+  console.log(`\n${c.bright}${c.blue}--- ${text} ---${c.reset}\n`);
 }
 
-function success(name: string, message: string) {
-  console.log(`${green}✓${reset} ${name}: ${message}`);
-  results.push({ name, passed: true, message });
+function pass(name: string, message: string) {
+  console.log(`${c.green}[OK]${c.reset} ${name}: ${message}`);
+  results.push({ name, passed: true, message, optional: false });
 }
 
-function error(name: string, message: string, optional = false) {
-  console.log(`${red}✗${reset} ${name}: ${message}`);
-  results.push({ name, passed: false, message, optional });
+function fail(name: string, message: string) {
+  console.log(`${c.red}[FAIL]${c.reset} ${name}: ${message}`);
+  results.push({ name, passed: false, message, optional: false });
 }
 
-function warning(name: string, message: string) {
-  console.log(`${yellow}⚠${reset} ${name}: ${message}`);
+function warn(name: string, message: string) {
+  console.log(`${c.yellow}[WARN]${c.reset} ${name}: ${message}`);
   results.push({ name, passed: true, message, optional: true });
 }
 
-function info(text: string) {
-  console.log(`${cyan}ℹ${reset} ${text}`);
+function envExists(key: string): boolean {
+  const val = process.env[key];
+  return typeof val === "string" && val.trim().length > 0;
 }
 
 // ============================================
-// 1. Environment Variables Check
+// 1. Environment Variables
 // ============================================
 
 function checkEnvVariables() {
   header("Environment Variables");
 
-  const required = [
-    { key: "DATABASE_URL", description: "Neon PostgreSQL connection string" },
-    { key: "BETTER_AUTH_SECRET", description: "BetterAuth secret key" },
-    { key: "RESEND_API_KEY", description: "Resend API key for emails" },
-    { key: "RESEND_FROM", description: "Email sender address" },
-    { key: "NEXT_PUBLIC_APP_URL", description: "Application URL" },
+  const required: { key: string; desc: string; validate?: (v: string) => string | null }[] = [
+    { key: "DATABASE_URL", desc: "PostgreSQL connection string" },
+    {
+      key: "BETTER_AUTH_SECRET",
+      desc: "BetterAuth secret (min 16 chars)",
+      validate: (v) => (v.length < 16 ? "Must be at least 16 characters" : null),
+    },
+    { key: "NEXT_PUBLIC_APP_URL", desc: "Application URL" },
+    {
+      key: "STRIPE_SECRET_KEY",
+      desc: "Stripe secret key",
+      validate: (v) => (v.startsWith("sk_") ? null : "Must start with 'sk_'"),
+    },
+    {
+      key: "STRIPE_WEBHOOK_SECRET",
+      desc: "Stripe webhook secret",
+      validate: (v) => (v.startsWith("whsec_") ? null : "Must start with 'whsec_'"),
+    },
+    {
+      key: "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+      desc: "Stripe publishable key",
+      validate: (v) => (v.startsWith("pk_") ? null : "Must start with 'pk_'"),
+    },
   ];
 
-  const optional = [
-    { key: "STRIPE_SECRET_KEY", description: "Stripe secret key (required for billing)" },
-    { key: "STRIPE_WEBHOOK_SECRET", description: "Stripe webhook secret" },
-    { key: "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", description: "Stripe publishable key" },
-    { key: "STRIPE_PRICE_ID_BASIC_MONTHLY", description: "Stripe price ID for Basic monthly plan" },
-    { key: "STRIPE_PRICE_ID_BASIC_YEARLY", description: "Stripe price ID for Basic yearly plan" },
-    { key: "STRIPE_PRICE_ID_PRO_MONTHLY", description: "Stripe price ID for Pro monthly plan" },
-    { key: "STRIPE_PRICE_ID_PRO_YEARLY", description: "Stripe price ID for Pro yearly plan" },
-    { key: "STRIPE_PRICE_ID_ENTERPRISE_MONTHLY", description: "Stripe price ID for Enterprise monthly plan" },
-    { key: "STRIPE_PRICE_ID_ENTERPRISE_YEARLY", description: "Stripe price ID for Enterprise yearly plan" },
+  const optional: { key: string; desc: string }[] = [
+    { key: "RESEND_API_KEY", desc: "Resend API key (for emails)" },
+    { key: "RESEND_FROM", desc: "Email sender address" },
+    { key: "GOOGLE_CLIENT_ID", desc: "Google OAuth client ID" },
+    { key: "GOOGLE_CLIENT_SECRET", desc: "Google OAuth client secret" },
+    { key: "GITHUB_CLIENT_ID", desc: "GitHub OAuth client ID" },
+    { key: "GITHUB_CLIENT_SECRET", desc: "GitHub OAuth client secret" },
+    { key: "UPSTASH_REDIS_REST_URL", desc: "Upstash Redis URL (rate limiting)" },
+    { key: "UPSTASH_REDIS_REST_TOKEN", desc: "Upstash Redis token (rate limiting)" },
+    { key: "NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY", desc: "Stripe Basic monthly price ID" },
+    { key: "NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY", desc: "Stripe Basic yearly price ID" },
+    { key: "NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY", desc: "Stripe Pro monthly price ID" },
+    { key: "NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY", desc: "Stripe Pro yearly price ID" },
   ];
 
-  // Check required variables
-  for (const { key, description } of required) {
-    const value = process.env[key];
-    if (!value || value.trim() === "") {
-      error(key, `Missing required environment variable (${description})`);
-    } else {
-      success(key, `Found (${description})`);
+  for (const { key, desc, validate } of required) {
+    if (!envExists(key)) {
+      fail(key, `Missing (${desc})`);
+      continue;
     }
-  }
-
-  // Check optional variables
-  for (const { key, description } of optional) {
-    const value = process.env[key];
-    if (!value || value.trim() === "") {
-      warning(key, `Optional: Not configured (${description})`);
-    } else {
-      success(key, `Found (${description})`);
-    }
-  }
-}
-
-// ============================================
-// 2. Database Connection Check
-// ============================================
-
-async function checkDatabaseConnection() {
-  header("Database Connection");
-
-  try {
-    if (!process.env.DATABASE_URL) {
-      error("Database", "DATABASE_URL not configured");
-      return;
-    }
-
-    const adapter = new PrismaPg({
-      connectionString: process.env.DATABASE_URL,
-    });
-
-    const prisma = new PrismaClient({ adapter });
-
-    // Try to connect
-    await prisma.$connect();
-    success("Database", "Successfully connected to PostgreSQL");
-
-    // Check if tables exist
-    try {
-      const userCount = await prisma.user.count();
-      success("Database Schema", `Found User table (${userCount} users)`);
-    } catch (err) {
-      warning("Database Schema", "Tables may not be migrated yet. Run: npx prisma migrate dev");
-    }
-
-    await prisma.$disconnect();
-  } catch (err) {
-    error("Database", `Failed to connect: ${err instanceof Error ? err.message : String(err)}`);
-  }
-}
-
-// ============================================
-// 3. Prisma Client Check
-// ============================================
-
-async function checkPrismaClient() {
-  header("Prisma Client");
-
-  try {
-    const adapter = new PrismaPg({
-      connectionString: process.env.DATABASE_URL || "",
-    });
-
-    const prisma = new PrismaClient({ adapter });
-
-    // Check if models are available
-    const models = [
-      "user",
-      "session",
-      "account",
-      "verification",
-      "emailLog",
-      "subscription",
-    ];
-
-    let allModelsExist = true;
-    for (const model of models) {
-      if (!(model in prisma)) {
-        error("Prisma Model", `Model '${model}' not found. Run: npx prisma generate`);
-        allModelsExist = false;
-        break;
+    if (validate) {
+      const err = validate(process.env[key]!);
+      if (err) {
+        fail(key, `Invalid: ${err}`);
+        continue;
       }
     }
+    pass(key, desc);
+  }
 
-    if (allModelsExist) {
-      success("Prisma Client", `All ${models.length} models are available`);
+  for (const { key, desc } of optional) {
+    if (envExists(key)) {
+      pass(key, desc);
+    } else {
+      warn(key, `Not configured (${desc})`);
     }
-  } catch (err) {
-    error("Prisma Client", `Error: ${err instanceof Error ? err.message : String(err)}`);
-    info("Try running: npx prisma generate");
   }
 }
 
 // ============================================
-// 4. Email Service Check
+// 2. Database + Prisma Check
 // ============================================
 
-async function checkEmailService() {
+async function checkDatabase() {
+  header("Database & Prisma");
+
+  if (!envExists("DATABASE_URL")) {
+    fail("Database", "DATABASE_URL not configured, skipping");
+    return;
+  }
+
+  let prisma: PrismaClient | null = null;
+
+  try {
+    const adapter = new PrismaPg({
+      connectionString: process.env.DATABASE_URL!,
+    });
+    prisma = new PrismaClient({ adapter });
+
+    await prisma.$connect();
+    pass("Database", "Connected to PostgreSQL");
+  } catch (err) {
+    fail("Database", `Connection failed: ${err instanceof Error ? err.message : String(err)}`);
+    return;
+  }
+
+  // Check Prisma models exist
+  const models = ["user", "session", "account", "verification", "emailLog", "subscription", "webhookEvent"];
+  let missingModels = false;
+
+  for (const model of models) {
+    if (!(model in prisma)) {
+      fail("Prisma Model", `'${model}' not found. Run: npx prisma generate`);
+      missingModels = true;
+      break;
+    }
+  }
+
+  if (!missingModels) {
+    pass("Prisma Models", `All ${models.length} models available`);
+  }
+
+  // Check tables exist
+  try {
+    const userCount = await prisma.user.count();
+    pass("Database Schema", `User table found (${userCount} users)`);
+  } catch {
+    warn("Database Schema", "Tables not migrated yet. Run: npx prisma db push");
+  }
+
+  await prisma.$disconnect();
+}
+
+// ============================================
+// 3. Email Service Check
+// ============================================
+
+function checkEmailService() {
   header("Email Service (Resend)");
 
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM;
 
   if (!apiKey) {
-    error("Resend API Key", "RESEND_API_KEY not configured");
+    warn("Resend", "RESEND_API_KEY not configured (email features disabled)");
     return;
   }
 
-  if (!fromEmail) {
-    error("Resend From Email", "RESEND_FROM not configured");
-    return;
+  if (apiKey.startsWith("re_")) {
+    pass("Resend API Key", "Valid format");
+  } else {
+    warn("Resend API Key", "Unusual format (expected 're_' prefix)");
   }
 
-  try {
-    const resend = new Resend(apiKey);
-
-    // Validate API key format
-    if (apiKey.startsWith("re_")) {
-      success("Resend API Key", "Valid API key format");
-    } else {
-      warning("Resend API Key", "API key format looks unusual (should start with 're_')");
-    }
-
-    success("Resend From Email", `Configured as: ${fromEmail}`);
-    info("Note: Test email sending by running your app and triggering an email");
-  } catch (err) {
-    error("Resend", `Error: ${err instanceof Error ? err.message : String(err)}`);
+  if (fromEmail) {
+    pass("Resend From", `Configured: ${fromEmail}`);
+  } else {
+    warn("Resend From", "RESEND_FROM not set (required when sending emails)");
   }
 }
 
 // ============================================
-// 5. Stripe Configuration Check
+// 4. Stripe Check
 // ============================================
 
-async function checkStripeConfiguration() {
+function checkStripeConfiguration() {
   header("Stripe Configuration");
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
-  if (!secretKey || secretKey.trim() === "") {
-    warning("Stripe Secret Key", "Not configured (optional for billing features)");
+  if (!secretKey) {
+    fail("Stripe", "STRIPE_SECRET_KEY not configured");
     return;
   }
 
-  try {
-    const stripe = new Stripe(secretKey, {
-      apiVersion: "2025-12-15.clover",
-    });
+  const mode = secretKey.startsWith("sk_test_") ? "TEST" : secretKey.startsWith("sk_live_") ? "LIVE" : null;
+  if (mode) {
+    pass("Stripe Mode", mode);
+  } else {
+    warn("Stripe Mode", "Could not detect test/live mode from key prefix");
+  }
 
-    // Validate key format
-    if (secretKey.startsWith("sk_test_") || secretKey.startsWith("sk_live_")) {
-      const mode = secretKey.startsWith("sk_test_") ? "TEST" : "LIVE";
-      success("Stripe Secret Key", `Valid ${mode} mode key`);
-    } else {
-      error("Stripe Secret Key", "Invalid key format (should start with 'sk_test_' or 'sk_live_')");
-    }
+  // Check price IDs
+  const priceIds = [
+    "NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY",
+    "NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY",
+    "NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY",
+    "NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY",
+  ];
 
-    if (webhookSecret && webhookSecret.trim() !== "") {
-      if (webhookSecret.startsWith("whsec_")) {
-        success("Stripe Webhook Secret", "Valid format");
-      } else {
-        error("Stripe Webhook Secret", "Invalid format (should start with 'whsec_')");
-      }
-    } else {
-      warning("Stripe Webhook Secret", "Not configured (required for webhook handling)");
-    }
+  const configured = priceIds.filter((id) => envExists(id));
 
-    if (publishableKey && publishableKey.trim() !== "") {
-      if (publishableKey.startsWith("pk_test_") || publishableKey.startsWith("pk_live_")) {
-        success("Stripe Publishable Key", "Valid format");
-      } else {
-        error("Stripe Publishable Key", "Invalid format");
-      }
-    } else {
-      warning("Stripe Publishable Key", "Not configured (required for client-side)");
-    }
-
-    // Check price IDs
-    const priceIds = [
-      "STRIPE_PRICE_ID_BASIC_MONTHLY",
-      "STRIPE_PRICE_ID_BASIC_YEARLY",
-      "STRIPE_PRICE_ID_PRO_MONTHLY",
-      "STRIPE_PRICE_ID_PRO_YEARLY",
-      "STRIPE_PRICE_ID_ENTERPRISE_MONTHLY",
-      "STRIPE_PRICE_ID_ENTERPRISE_YEARLY",
-    ];
-
-    const configuredPrices = priceIds.filter((id) => {
-      const value = process.env[id];
-      return value && value.trim() !== "";
-    });
-
-    if (configuredPrices.length === 0) {
-      warning("Stripe Price IDs", "No price IDs configured. Set these to enable subscriptions.");
-    } else if (configuredPrices.length === priceIds.length) {
-      success("Stripe Price IDs", `All ${priceIds.length} price IDs configured`);
-    } else {
-      warning(
-        "Stripe Price IDs",
-        `${configuredPrices.length}/${priceIds.length} price IDs configured`
-      );
-    }
-  } catch (err) {
-    error("Stripe", `Error: ${err instanceof Error ? err.message : String(err)}`);
+  if (configured.length === priceIds.length) {
+    pass("Stripe Prices", `All ${priceIds.length} price IDs configured`);
+  } else if (configured.length > 0) {
+    warn("Stripe Prices", `${configured.length}/${priceIds.length} price IDs configured`);
+  } else {
+    warn("Stripe Prices", "No price IDs configured (subscriptions disabled)");
   }
 }
 
 // ============================================
-// 6. Dependencies Check
+// 5. Dependencies Check
 // ============================================
 
-async function checkDependencies() {
-  header("Critical Dependencies");
+function checkDependencies() {
+  header("Dependencies");
 
   const criticalDeps = [
     "next",
     "react",
-    "prisma",
     "@prisma/client",
     "better-auth",
     "stripe",
     "@stripe/stripe-js",
-    "resend",
     "zod",
-    "date-fns",
+    "next-intl",
+    "lucide-react",
+    "@upstash/redis",
+    "@upstash/ratelimit",
   ];
 
   try {
-    const packageJson = require("../package.json");
-    const allDeps = {
-      ...packageJson.dependencies,
-      ...packageJson.devDependencies,
-    };
+    const raw = fs.readFileSync(path.join(process.cwd(), "package.json"), "utf-8");
+    const pkg = JSON.parse(raw);
+    const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
 
     for (const dep of criticalDeps) {
       if (allDeps[dep]) {
-        success(dep, `Installed (${allDeps[dep]})`);
+        pass(dep, allDeps[dep]);
       } else {
-        error(dep, "Not installed. Run: pnpm install");
+        fail(dep, "Not installed. Run: pnpm install");
       }
     }
-  } catch (err) {
-    error("Dependencies", "Could not read package.json");
+  } catch {
+    fail("Dependencies", "Could not read package.json");
   }
 }
 
 // ============================================
-// 7. File Structure Check
+// 6. File Structure Check
 // ============================================
 
-async function checkFileStructure() {
-  header("Critical Files & Folders");
+function checkFileStructure() {
+  header("Files & Folders");
 
-  const fs = require("fs");
-  const path = require("path");
-
-  const criticalPaths = [
-    { path: "src/app/api", type: "dir", description: "API routes directory" },
-    { path: "src/lib/auth.ts", type: "file", description: "BetterAuth configuration" },
-    { path: "src/lib/db/index.ts", type: "file", description: "Prisma client" },
-    { path: "src/middleware.ts", type: "file", description: "Auth middleware" },
-    { path: "prisma/schema.prisma", type: "file", description: "Database schema" },
-    { path: ".env", type: "file", description: "Environment variables" },
+  const checks: { filePath: string; type: "file" | "dir"; desc: string }[] = [
+    { filePath: "src/app/api", type: "dir", desc: "API routes" },
+    { filePath: "src/lib/auth.ts", type: "file", desc: "BetterAuth config" },
+    { filePath: "src/lib/db/index.ts", type: "file", desc: "Prisma client" },
+    { filePath: "src/lib/env.ts", type: "file", desc: "Env validation" },
+    { filePath: "src/lib/csrf.ts", type: "file", desc: "CSRF protection" },
+    { filePath: "src/lib/rate-limit.ts", type: "file", desc: "Rate limiter" },
+    { filePath: "src/middleware.ts", type: "file", desc: "Auth middleware" },
+    { filePath: "src/i18n/config.ts", type: "file", desc: "i18n config" },
+    { filePath: "src/messages/en.json", type: "file", desc: "English translations" },
+    { filePath: "src/messages/vi.json", type: "file", desc: "Vietnamese translations" },
+    { filePath: "prisma/schema.prisma", type: "file", desc: "Database schema" },
+    { filePath: ".env", type: "file", desc: "Environment variables" },
   ];
 
-  for (const { path: filePath, type, description } of criticalPaths) {
+  for (const { filePath, type, desc } of checks) {
     const fullPath = path.join(process.cwd(), filePath);
 
     try {
       const stats = fs.statSync(fullPath);
-      const isCorrectType =
-        (type === "file" && stats.isFile()) || (type === "dir" && stats.isDirectory());
+      const isMatch = type === "file" ? stats.isFile() : stats.isDirectory();
 
-      if (isCorrectType) {
-        success(filePath, description);
+      if (isMatch) {
+        pass(filePath, desc);
       } else {
-        error(filePath, `Expected ${type} but found ${stats.isFile() ? "file" : "directory"}`);
+        fail(filePath, `Expected ${type} but found ${stats.isFile() ? "file" : "directory"}`);
       }
-    } catch (err) {
-      error(filePath, `Not found (${description})`);
+    } catch {
+      fail(filePath, `Not found (${desc})`);
     }
   }
 }
 
 // ============================================
-// Main Execution
+// Main
 // ============================================
 
 async function main() {
-  console.log(`\n${bright}${cyan}╔════════════════════════════════════════════════╗${reset}`);
-  console.log(`${bright}${cyan}║  Next.js 16 SaaS Template - Setup Verification ║${reset}`);
-  console.log(`${bright}${cyan}╚════════════════════════════════════════════════╝${reset}\n`);
+  console.log(`\n${c.bright}${c.cyan}King Template - Setup Verification${c.reset}\n`);
 
-  // Run all checks
   checkEnvVariables();
-  await checkDatabaseConnection();
-  await checkPrismaClient();
-  await checkEmailService();
-  await checkStripeConfiguration();
-  await checkDependencies();
-  await checkFileStructure();
+  await checkDatabase();
+  checkEmailService();
+  checkStripeConfiguration();
+  checkDependencies();
+  checkFileStructure();
 
   // Summary
   header("Summary");
 
-  const requiredChecks = results.filter((r) => !r.optional);
-  const optionalChecks = results.filter((r) => r.optional);
+  const required = results.filter((r) => !r.optional);
+  const optional = results.filter((r) => r.optional);
 
-  const requiredPassed = requiredChecks.filter((r) => r.passed).length;
-  const requiredFailed = requiredChecks.filter((r) => !r.passed).length;
+  const requiredPassed = required.filter((r) => r.passed).length;
+  const requiredFailed = required.filter((r) => !r.passed).length;
+  const optionalConfigured = optional.filter((r) => !r.message.startsWith("Not configured")).length;
+  const optionalSkipped = optional.length - optionalConfigured;
 
-  const optionalPassed = optionalChecks.filter((r) => r.passed).length;
-  const optionalWarnings = optionalChecks.filter((r) => !r.passed).length;
-
-  console.log(`Required Checks: ${green}${requiredPassed} passed${reset}, ${red}${requiredFailed} failed${reset}`);
-  console.log(`Optional Checks: ${green}${optionalPassed} configured${reset}, ${yellow}${optionalWarnings} skipped${reset}`);
-  console.log(`Total: ${results.length} checks performed\n`);
+  console.log(
+    `Required: ${c.green}${requiredPassed} passed${c.reset}, ${c.red}${requiredFailed} failed${c.reset}`
+  );
+  console.log(
+    `Optional: ${c.green}${optionalConfigured} configured${c.reset}, ${c.yellow}${optionalSkipped} skipped${c.reset}`
+  );
+  console.log(`Total: ${results.length} checks\n`);
 
   if (requiredFailed === 0) {
-    console.log(`${bright}${green}✓ All required checks passed!${reset}`);
-    console.log(`${cyan}Your project is ready to run.${reset}\n`);
+    console.log(`${c.bright}${c.green}All required checks passed.${c.reset}`);
 
-    if (optionalWarnings > 0) {
-      console.log(`${yellow}Note: Some optional features are not configured.${reset}`);
-      console.log(`${cyan}Check the warnings above if you need those features.${reset}\n`);
+    if (optionalSkipped > 0) {
+      console.log(`${c.yellow}Some optional features not configured (see warnings above).${c.reset}`);
     }
 
-    console.log(`${bright}Next steps:${reset}`);
-    console.log(`  1. Run migrations: ${cyan}npx prisma migrate dev${reset}`);
-    console.log(`  2. Seed database: ${cyan}npx prisma db seed${reset}`);
-    console.log(`  3. Start dev server: ${cyan}npm run dev${reset}\n`);
-
+    console.log(`\n${c.bright}Next steps:${c.reset}`);
+    console.log(`  1. ${c.cyan}npx prisma db push${c.reset}    (migrate database)`);
+    console.log(`  2. ${c.cyan}pnpm run dev${c.reset}           (start dev server)\n`);
     process.exit(0);
   } else {
-    console.log(`${bright}${red}✗ Some required checks failed!${reset}`);
-    console.log(`${cyan}Please fix the errors above before running the app.${reset}\n`);
-
-    console.log(`${bright}Quick fixes:${reset}`);
-    console.log(`  • Missing env vars: Copy .env.example to .env and fill in values`);
-    console.log(`  • Database issues: Check DATABASE_URL and run migrations`);
-    console.log(`  • Prisma errors: Run ${cyan}npx prisma generate${reset}`);
-    console.log(`  • Missing deps: Run ${cyan}pnpm install${reset}\n`);
-
+    console.log(`${c.bright}${c.red}${requiredFailed} required check(s) failed.${c.reset}`);
+    console.log(`\n${c.bright}Quick fixes:${c.reset}`);
+    console.log(`  - Missing env vars: copy .env.example to .env and fill in values`);
+    console.log(`  - Database: check DATABASE_URL and run ${c.cyan}npx prisma db push${c.reset}`);
+    console.log(`  - Prisma: run ${c.cyan}npx prisma generate${c.reset}`);
+    console.log(`  - Deps: run ${c.cyan}pnpm install${c.reset}\n`);
     process.exit(1);
   }
 }
 
-// Run verification
 main().catch((err) => {
-  console.error(`${red}Verification script error:${reset}`, err);
+  console.error(`${c.red}Verification failed:${c.reset}`, err);
   process.exit(1);
 });

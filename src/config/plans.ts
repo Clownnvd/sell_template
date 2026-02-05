@@ -1,4 +1,4 @@
-export type PlanKey = "FREE" | "BASIC" | "PRO" | "ENTERPRISE";
+export type PlanKey = "FREE" | "BASIC" | "PRO";
 
 export interface Plan {
   name: string;
@@ -19,13 +19,14 @@ export interface Plan {
     apiCalls: number; // per month
   };
   features: string[];
+  popular?: boolean;
 }
 
 export const plans: Record<PlanKey, Plan> = {
   FREE: {
     name: "Free",
     slug: "FREE",
-    description: "Perfect for trying out the platform",
+    description: "Perfect for getting started",
     price: {
       monthly: 0,
       yearly: 0,
@@ -36,13 +37,13 @@ export const plans: Record<PlanKey, Plan> = {
     },
     limits: {
       projects: 1,
-      teamMembers: 1,
+      teamMembers: 3,
       storage: 1,
       apiCalls: 1000,
     },
     features: [
       "1 project",
-      "1 team member",
+      "Up to 3 team members",
       "1 GB storage",
       "1,000 API calls/month",
       "Community support",
@@ -51,24 +52,24 @@ export const plans: Record<PlanKey, Plan> = {
   BASIC: {
     name: "Basic",
     slug: "BASIC",
-    description: "For small teams getting started",
+    description: "Essential features for small teams",
     price: {
-      monthly: 9,
-      yearly: 90,
+      monthly: 29,
+      yearly: 290,
     },
     stripePriceId: {
-      monthly: process.env.STRIPE_PRICE_ID_BASIC_MONTHLY || "",
-      yearly: process.env.STRIPE_PRICE_ID_BASIC_YEARLY || "",
+      monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY || "",
+      yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY || "",
     },
     limits: {
       projects: 5,
-      teamMembers: 3,
+      teamMembers: 10,
       storage: 10,
       apiCalls: 10000,
     },
     features: [
       "5 projects",
-      "3 team members",
+      "Up to 10 team members",
       "10 GB storage",
       "10,000 API calls/month",
       "Email support",
@@ -78,60 +79,31 @@ export const plans: Record<PlanKey, Plan> = {
   PRO: {
     name: "Pro",
     slug: "PRO",
-    description: "For growing businesses",
-    price: {
-      monthly: 29,
-      yearly: 290,
-    },
-    stripePriceId: {
-      monthly: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || "",
-      yearly: process.env.STRIPE_PRICE_ID_PRO_YEARLY || "",
-    },
-    limits: {
-      projects: 20,
-      teamMembers: 10,
-      storage: 100,
-      apiCalls: 100000,
-    },
-    features: [
-      "20 projects",
-      "10 team members",
-      "100 GB storage",
-      "100,000 API calls/month",
-      "Priority email support",
-      "Advanced analytics",
-      "Custom integrations",
-    ],
-  },
-  ENTERPRISE: {
-    name: "Enterprise",
-    slug: "ENTERPRISE",
-    description: "For large teams",
+    description: "Advanced features for growing businesses",
     price: {
       monthly: 99,
       yearly: 990,
     },
     stripePriceId: {
-      monthly: process.env.STRIPE_PRICE_ID_ENTERPRISE_MONTHLY || "",
-      yearly: process.env.STRIPE_PRICE_ID_ENTERPRISE_YEARLY || "",
+      monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || "",
+      yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || "",
     },
     limits: {
       projects: -1, // unlimited
-      teamMembers: -1, // unlimited
-      storage: -1, // unlimited
-      apiCalls: -1, // unlimited
+      teamMembers: 50,
+      storage: 100,
+      apiCalls: 100000,
     },
     features: [
       "Unlimited projects",
-      "Unlimited team members",
-      "Unlimited storage",
-      "Unlimited API calls",
-      "24/7 phone & email support",
+      "Up to 50 team members",
+      "100 GB storage",
+      "100,000 API calls/month",
+      "Priority support",
       "Advanced analytics",
       "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantees",
     ],
+    popular: true,
   },
 };
 
@@ -141,4 +113,10 @@ export function getPlan(slug: PlanKey): Plan {
 
 export function getAllPlans(): Plan[] {
   return Object.values(plans);
+}
+
+export function getUpgradePlans(currentPlan: PlanKey): Plan[] {
+  const order: PlanKey[] = ["FREE", "BASIC", "PRO"];
+  const currentIndex = order.indexOf(currentPlan);
+  return order.slice(currentIndex + 1).map((key) => plans[key]);
 }

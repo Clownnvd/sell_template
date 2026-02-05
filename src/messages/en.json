@@ -1,0 +1,496 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "learnMore": "Learn more",
+    "getStarted": "Get started",
+    "viewAll": "View all",
+    "close": "Close"
+  },
+  "navigation": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "docs": "Docs",
+    "blog": "Blog",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "billing": "Billing",
+    "profile": "Profile",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out"
+  },
+  "landing": {
+    "logos": {
+      "title": "Trusted by teams building modern products"
+    },
+    "pricingTeaser": {
+      "badge": "Pricing",
+      "title": "Simple pricing",
+      "description": "Start free. Upgrade when you're ready. Cancel anytime.",
+      "viewDetails": "View details",
+      "enterprise": "Need an Enterprise plan?",
+      "talkToSales": "Talk to sales",
+      "plans": {
+        "free": {
+          "name": "Free",
+          "price": "$0",
+          "note": "For getting started",
+          "features": ["1 project", "Up to 3 members", "Community support"]
+        },
+        "basic": {
+          "name": "Basic",
+          "price": "$29",
+          "note": "Per month",
+          "badge": "Most popular",
+          "features": ["3 projects", "Up to 10 members", "Email support"]
+        },
+        "pro": {
+          "name": "Pro",
+          "price": "$99",
+          "note": "Per month",
+          "features": ["Unlimited projects", "Up to 50 members", "Priority support"]
+        }
+      }
+    },
+    "hero": {
+      "badge": "Next.js 16 • Prisma • BetterAuth • Stripe",
+      "title": "Build your",
+      "titleHighlight": "SaaS faster",
+      "titleEnd": "without the boring setup",
+      "description": "A production-ready starter with authentication, billing, and a clean dashboard. Ship your product in days, not weeks.",
+      "cta": "Get started free",
+      "ctaSecondary": "See pricing",
+      "features": {
+        "secureAuth": "Secure auth",
+        "stripeBilling": "Stripe billing",
+        "readyToDeploy": "Ready to deploy"
+      },
+      "preview": {
+        "title": "Dashboard Preview",
+        "live": "Live",
+        "monthlyRevenue": "Monthly Revenue",
+        "activeUsers": "Active Users",
+        "conversion": "Conversion",
+        "vsLastMonth": "+18.2% vs last month",
+        "thisWeek": "+124 this week",
+        "industryAvg": "Industry avg: 2.1%",
+        "revenueOverview": "Revenue Overview",
+        "last7Days": "Last 7 days",
+        "integrations": "Integrations",
+        "connectTools": "Connect your favorite tools",
+        "connect": "Connect",
+        "paymentReceived": "Payment received",
+        "newSignup": "New signup"
+      },
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      }
+    },
+    "features": {
+      "badge": "Features",
+      "title": "Everything you need for a",
+      "titleHighlight": "real SaaS",
+      "description": "Start with a strong foundation: auth, billing, teams, and a clean UI system — already wired together.",
+      "bottomCta": "And much more — check out the",
+      "documentation": "documentation",
+      "bottomCtaEnd": "to see everything included.",
+      "items": {
+        "auth": {
+          "title": "Authentication that just works",
+          "description": "Email/password, magic links, sessions, and secure defaults via BetterAuth."
+        },
+        "billing": {
+          "title": "Stripe subscriptions built-in",
+          "description": "Checkout, customer portal, webhooks, and plan gating for SaaS pricing tiers."
+        },
+        "limits": {
+          "title": "Usage limits & quotas",
+          "description": "Enforce plan limits and feature access with simple helpers."
+        },
+        "dx": {
+          "title": "Production-grade DX",
+          "description": "Typed routes, strict TypeScript, clean folder structure, and reusable UI primitives."
+        },
+        "security": {
+          "title": "Secure by default",
+          "description": "Server-first patterns, protected routes, and sensible middleware configuration."
+        },
+        "growth": {
+          "title": "Ready for growth",
+          "description": "Add features fast with composable components and scalable data modeling."
+        }
+      }
+    },
+    "howItWorks": {
+      "badge": "How it works",
+      "title": "Up and running in",
+      "titleHighlight": "minutes",
+      "description": "Get your SaaS live with just a few steps. No complex setup required.",
+      "steps": {
+        "clone": {
+          "title": "Clone the template",
+          "description": "Start with a production-ready codebase."
+        },
+        "configure": {
+          "title": "Configure your services",
+          "description": "Add your Stripe and database credentials."
+        },
+        "customize": {
+          "title": "Customize & deploy",
+          "description": "Make it yours and ship to production."
+        }
+      }
+    },
+    "pricing": {
+      "badge": "Pricing",
+      "title": "Simple,",
+      "titleHighlight": "transparent",
+      "titleEnd": "pricing",
+      "description": "Choose the plan that works for you. All plans include a 14-day money-back guarantee.",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "Save 20%",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "currentPlan": "Current plan",
+      "getStarted": "Get started",
+      "contactSales": "Contact sales",
+      "mostPopular": "Most popular",
+      "features": "Features",
+      "manage": "Manage",
+      "upgradeTo": "Upgrade to {plan}",
+      "redirecting": "Redirecting...",
+      "faqTitle": "Frequently Asked Questions",
+      "stillHaveQuestions": "Still have questions?",
+      "helpFindPlan": "Our team is here to help you find the perfect plan",
+      "contactUs": "Contact Us",
+      "plans": {
+        "free": {
+          "name": "Free",
+          "description": "For individuals just getting started"
+        },
+        "basic": {
+          "name": "Basic",
+          "description": "For small teams and projects"
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "For growing businesses"
+        }
+      }
+    },
+    "testimonials": {
+      "badge": "Testimonials",
+      "title": "Loved by",
+      "titleHighlight": "developers",
+      "description": "See what others are saying about King Template."
+    },
+    "faq": {
+      "badge": "FAQ",
+      "title": "Frequently asked",
+      "titleHighlight": "questions",
+      "description": "Everything you need to know about King Template. Can't find the answer you're looking for? Contact our support team.",
+      "contactSupport": "Contact support",
+      "items": {
+        "changePlan": {
+          "q": "Can I change my plan later?",
+          "a": "Yes. You can upgrade or downgrade anytime. Changes apply to your next billing cycle. We make it easy to adjust as your needs evolve."
+        },
+        "paymentMethods": {
+          "q": "What payment methods do you accept?",
+          "a": "All major cards via Stripe including Visa, MasterCard, American Express, and more. You can also manage invoices and subscriptions from the customer portal."
+        },
+        "refunds": {
+          "q": "Do you offer refunds?",
+          "a": "For paid plans, we offer a 14-day money-back guarantee. If you're not satisfied, contact support and we'll process your refund - no questions asked."
+        },
+        "production": {
+          "q": "Is this template production-ready?",
+          "a": "Absolutely. It's designed with production patterns: server-first routing, protected pages, Stripe webhooks, secure authentication, and a scalable data model."
+        },
+        "selfHost": {
+          "q": "Can I self-host?",
+          "a": "Yes. Deploy on Vercel, Railway, a VPS, or any Node platform that supports Next.js and your database of choice (PostgreSQL recommended)."
+        },
+        "support": {
+          "q": "Do you provide support?",
+          "a": "Yes! Free plan users get community support via GitHub Discussions. Paid plans include email support with faster response times."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to build your",
+      "titleHighlight": "SaaS",
+      "titleEnd": "?",
+      "description": "Start with a production-ready template and ship faster.",
+      "button": "Get started for free",
+      "noCreditCard": "No credit card required"
+    },
+    "footer": {
+      "description": "A production-ready SaaS template built with Next.js, Prisma, BetterAuth, and Stripe.",
+      "product": "Product",
+      "resources": "Resources",
+      "company": "Company",
+      "legal": "Legal",
+      "allRightsReserved": "All rights reserved.",
+      "links": {
+        "features": "Features",
+        "pricing": "Pricing",
+        "changelog": "Changelog",
+        "roadmap": "Roadmap",
+        "docs": "Documentation",
+        "guides": "Guides",
+        "apiReference": "API Reference",
+        "support": "Support",
+        "about": "About",
+        "blog": "Blog",
+        "careers": "Careers",
+        "contact": "Contact",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "cookies": "Cookie Policy"
+      }
+    }
+  },
+  "auth": {
+    "oauth": {
+      "orContinueWith": "or continue with",
+      "connecting": "Connecting...",
+      "continueWith": {
+        "google": "Continue with Google",
+        "github": "Continue with GitHub"
+      },
+      "signUpWith": {
+        "google": "Sign up with Google",
+        "github": "Sign up with GitHub"
+      },
+      "error": {
+        "title": "OAuth Error",
+        "generic": "Failed to sign in with this provider. Please try again.",
+        "accountExists": "An account with this email already exists. Please sign in with your original method."
+      }
+    },
+    "signIn": {
+      "title": "Welcome back",
+      "description": "Sign in to your account to continue",
+      "email": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "redirecting": "Redirecting...",
+      "noAccount": "New to King Template?",
+      "createAccount": "Create an account",
+      "error": {
+        "title": "Authentication failed",
+        "invalid": "Invalid email or password"
+      }
+    },
+    "signUp": {
+      "title": "Create an account",
+      "description": "Get started with your free account",
+      "name": "Full name",
+      "namePlaceholder": "John Doe",
+      "email": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "redirecting": "Redirecting...",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "terms": "By creating an account, you agree to our",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy",
+      "error": {
+        "title": "Registration failed",
+        "emailExists": "An account with this email already exists"
+      }
+    },
+    "forgotPassword": {
+      "title": "Forgot password?",
+      "description": "Enter your email and we'll send you a reset link",
+      "email": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Send reset link",
+      "submitting": "Sending...",
+      "success": {
+        "title": "Check your email",
+        "description": "We've sent a password reset link to your email address."
+      },
+      "backToSignIn": "Back to sign in"
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "description": "Enter your new password",
+      "password": "New password",
+      "passwordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submit": "Reset password",
+      "submitting": "Resetting...",
+      "success": {
+        "title": "Password reset successful",
+        "description": "Your password has been updated. You can now sign in."
+      },
+      "signIn": "Sign in"
+    },
+    "verifyEmail": {
+      "title": "Verify your email",
+      "description": "Please verify your email address to continue",
+      "verifying": "Verifying your email...",
+      "success": {
+        "title": "Email verified",
+        "description": "Your email has been verified. You can now sign in."
+      },
+      "error": {
+        "title": "Verification failed",
+        "description": "The verification link is invalid or has expired."
+      },
+      "resend": "Resend verification email",
+      "signIn": "Sign in"
+    },
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "analytics": "Analytics",
+      "projects": "Projects",
+      "team": "Team",
+      "billing": "Billing",
+      "settings": "Settings",
+      "help": "Help & Support",
+      "account": "Account",
+      "profile": "Profile"
+    },
+    "stats": {
+      "totalRevenue": "Total Revenue",
+      "activeUsers": "Active Users",
+      "newSignups": "New Signups",
+      "conversionRate": "Conversion Rate"
+    },
+    "analytics": {
+      "title": "Analytics",
+      "description": "Track your key metrics and performance"
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "Manage your projects and tasks",
+      "create": "Create project",
+      "empty": "No projects yet",
+      "emptyDescription": "Get started by creating your first project"
+    },
+    "team": {
+      "title": "Team",
+      "description": "Manage your team members",
+      "invite": "Invite member",
+      "members": "Members",
+      "pending": "Pending invitations",
+      "empty": "No team members yet"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your account settings",
+      "profile": {
+        "title": "Profile",
+        "description": "Update your profile information",
+        "name": "Name",
+        "email": "Email",
+        "avatar": "Avatar",
+        "save": "Save changes"
+      },
+      "account": {
+        "title": "Account",
+        "description": "Manage your account settings",
+        "deleteAccount": "Delete account",
+        "deleteWarning": "This action cannot be undone. This will permanently delete your account and remove your data from our servers."
+      }
+    },
+    "billing": {
+      "title": "Billing",
+      "description": "Manage your subscription and billing",
+      "currentPlan": "Current Plan",
+      "nextBilling": "Next billing date",
+      "changePlan": "Change plan",
+      "cancelSubscription": "Cancel subscription",
+      "resumeSubscription": "Resume subscription",
+      "paymentMethod": "Payment method",
+      "updatePayment": "Update payment method",
+      "invoices": "Invoices",
+      "viewInvoice": "View invoice",
+      "manageSubscription": "Manage subscription"
+    },
+    "help": {
+      "title": "Help & Support",
+      "description": "Get help with King Template",
+      "docs": "Documentation",
+      "docsDescription": "Read our comprehensive documentation",
+      "contact": "Contact support",
+      "contactDescription": "Get in touch with our support team",
+      "faq": "FAQ",
+      "faqDescription": "Find answers to common questions"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Page not found",
+    "notFoundDescription": "The page you're looking for doesn't exist.",
+    "unauthorized": "Unauthorized",
+    "unauthorizedDescription": "You don't have permission to access this page.",
+    "serverError": "Server error",
+    "serverErrorDescription": "An unexpected error occurred. Please try again later.",
+    "networkError": "Network error",
+    "networkErrorDescription": "Please check your internet connection and try again.",
+    "goHome": "Go home",
+    "tryAgain": "Try again"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email address",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be at most {max} characters",
+    "passwordMatch": "Passwords do not match",
+    "invalidCredentials": "Invalid email or password"
+  }
+}

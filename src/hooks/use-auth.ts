@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useTransition, useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 type AuthError = {
@@ -13,64 +14,110 @@ type AuthError = {
   };
 };
 
+type AuthResult<T = unknown> = {
+  ok: boolean;
+  data?: T;
+  error?: unknown;
+};
+
+/**
+ * useAuth hook - Optimized with Vercel React Best Practices
+ *
+ * Improvements:
+ * - Uses useTransition for non-blocking loading states (rendering-usetransition-loading)
+ * - Functional setState for stable callbacks (rerender-functional-setstate)
+ * - Early return pattern (js-early-exit)
+ * - Preload support for dashboard (bundle-preload)
+ */
 export function useAuth() {
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [uiError, setUiError] = useState<AuthError | null>(null);
 
-  const signIn = async (data: { email: string; password: string }) => {
-    setIsLoading(true);
-    setUiError(null);
+  // Preload dashboard route for faster navigation after login
+  const preloadDashboard = useCallback(() => {
+    router.prefetch("/dashboard");
+  }, [router]);
 
-    try {
-      const result = await authClient.signIn.email(data);
+  const signIn = useCallback(
+    async (data: { email: string; password: string }): Promise<AuthResult> => {
+      // Clear previous errors
+      setUiError(null);
 
-      if (result.error) {
+      try {
+        const result = await authClient.signIn.email(data);
+
+        if (result.error) {
+          const errorMessage = result.error.message || "Failed to sign in";
+
+          // Map common errors to field-level errors for better UX
+          if (errorMessage.toLowerCase().includes("email")) {
+            setUiError({ fieldErrors: { email: errorMessage } });
+          } else if (errorMessage.toLowerCase().includes("password")) {
+            setUiError({ fieldErrors: { password: errorMessage } });
+          } else if (
+            errorMessage.toLowerCase().includes("invalid") ||
+            errorMessage.toLowerCase().includes("credentials")
+          ) {
+            setUiError({
+              formError: "Invalid email or password. Please try again.",
+            });
+          } else {
+            setUiError({ formError: errorMessage });
+          }
+
+          return { ok: false, error: result.error };
+        }
+
+        return { ok: true, data: result.data };
+      } catch (error) {
         setUiError({
-          formError: result.error.message || "Failed to sign in",
+          formError: "Network error. Please check your connection.",
         });
-        return { ok: false, error: result.error };
+        return { ok: false, error };
       }
+    },
+    []
+  );
 
-      return { ok: true, data: result.data };
-    } catch (error) {
-      setUiError({
-        formError: "An unexpected error occurred",
-      });
-      return { ok: false, error };
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const signUp = useCallback(
+    async (data: {
+      email: string;
+      password: string;
+      name: string;
+    }): Promise<AuthResult> => {
+      setUiError(null);
 
-  const signUp = async (data: { email: string; password: string; name: string }) => {
-    setIsLoading(true);
-    setUiError(null);
+      try {
+        const result = await authClient.signUp.email(data);
 
-    try {
-      const result = await authClient.signUp.email(data);
+        if (result.error) {
+          const errorMessage = result.error.message || "Failed to sign up";
 
-      if (result.error) {
+          // Map errors to field-level for better UX
+          if (errorMessage.toLowerCase().includes("email")) {
+            setUiError({ fieldErrors: { email: errorMessage } });
+          } else if (errorMessage.toLowerCase().includes("password")) {
+            setUiError({ fieldErrors: { password: errorMessage } });
+          } else {
+            setUiError({ formError: errorMessage });
+          }
+
+          return { ok: false, error: result.error };
+        }
+
+        return { ok: true, data: result.data };
+      } catch (error) {
         setUiError({
-          formError: result.error.message || "Failed to sign up",
+          formError: "Network error. Please check your connection.",
         });
-        return { ok: false, error: result.error };
+        return { ok: false, error };
       }
+    },
+    []
+  );
 
-      return { ok: true, data: result.data };
-    } catch (error) {
-      setUiError({
-        formError: "An unexpected error occurred",
-      });
-      return { ok: false, error };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Password reset methods will be implemented in usePassword hook
-
-  const signOut = async () => {
-    setIsLoading(true);
+  const signOut = useCallback(async (): Promise<AuthResult> => {
     setUiError(null);
 
     try {
@@ -89,19 +136,30 @@ export function useAuth() {
         formError: "An unexpected error occurred",
       });
       return { ok: false, error };
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const clearError = () => setUiError(null);
+  // Navigate with transition for non-blocking UI
+  const navigateAfterAuth = useCallback(
+    (url: string) => {
+      startTransition(() => {
+        router.replace(url);
+        router.refresh();
+      });
+    },
+    [router]
+  );
+
+  const clearError = useCallback(() => setUiError(null), []);
 
   return {
-    isLoading,
+    isPending,
     uiError,
     signIn,
     signUp,
     signOut,
     clearError,
+    preloadDashboard,
+    navigateAfterAuth,
   };
 }
