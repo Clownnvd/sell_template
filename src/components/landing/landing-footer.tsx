@@ -147,20 +147,26 @@ export function LandingFooter() {
                 Get the latest updates and news directly to your inbox.
               </p>
             </div>
-            <div className="flex w-full max-w-md gap-3">
+            <form
+              action="https://formsubmit.co/hello@example.com"
+              method="POST"
+              className="flex w-full max-w-md gap-3"
+            >
               <input
                 type="email"
+                name="email"
+                required
                 placeholder="Enter your email"
                 aria-label="Email address for newsletter"
                 className="h-12 flex-1 rounded-xl border border-border bg-background px-4 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
               />
               <button
-                type="button"
+                type="submit"
                 className="h-12 rounded-xl bg-red-600 px-6 text-sm font-medium text-white transition-colors hover:bg-red-700"
               >
                 Subscribe
               </button>
-            </div>
+            </form>
           </div>
         </div>
 

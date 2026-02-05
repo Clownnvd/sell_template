@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { successResponse, unauthorizedError } from "@/lib/api/response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,16 +11,14 @@ export async function GET(req: NextRequest) {
   // Rate limiting: 20 requests per minute
   const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "subscription");
   if (rateLimitResult) return rateLimitResult;
+
   const session = await auth.api.getSession({
     headers: req.headers,
   });
 
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return unauthorizedError();
   }
 
   const sub = await prisma.subscription.findUnique({
@@ -34,25 +33,21 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // Nếu chưa có subscription row, trả FREE default
+  // If no subscription row exists, return FREE default
   if (!sub) {
-    return NextResponse.json({
-      data: {
-        id: "free",
-        plan: "FREE",
-        status: "ACTIVE",
-        currentPeriodStart: new Date().toISOString(),
-        currentPeriodEnd: new Date().toISOString(),
-        cancelAtPeriodEnd: false,
-      },
+    return successResponse({
+      id: "free",
+      plan: "FREE",
+      status: "ACTIVE",
+      currentPeriodStart: new Date().toISOString(),
+      currentPeriodEnd: new Date().toISOString(),
+      cancelAtPeriodEnd: false,
     });
   }
 
-  return NextResponse.json({
-    data: {
-      ...sub,
-      currentPeriodStart: sub.currentPeriodStart?.toISOString(),
-      currentPeriodEnd: sub.currentPeriodEnd?.toISOString(),
-    },
+  return successResponse({
+    ...sub,
+    currentPeriodStart: sub.currentPeriodStart?.toISOString(),
+    currentPeriodEnd: sub.currentPeriodEnd?.toISOString(),
   });
 }

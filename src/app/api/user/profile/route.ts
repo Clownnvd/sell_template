@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { updateProfileSchema } from "@/lib/validations/profile";
 import { verifyCsrf } from "@/lib/csrf";
+import { successResponse, unauthorizedError, notFoundError, errorResponse, serverError } from "@/lib/api/response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,10 +24,7 @@ export async function GET(req: NextRequest) {
 
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return unauthorizedError();
   }
 
   try {
@@ -43,27 +41,19 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return notFoundError("User not found");
     }
 
-    return NextResponse.json({
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatarUrl: user.image,
-        emailVerified: user.emailVerified,
-        createdAt: user.createdAt.toISOString(),
-      },
+    return successResponse({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.image,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt.toISOString(),
     });
   } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch profile" },
-      { status: 500 }
-    );
+    return serverError("Failed to fetch profile");
   }
 }
 
@@ -86,10 +76,7 @@ export async function PATCH(req: NextRequest) {
 
   const userId = session?.user?.id;
   if (!userId) {
-    return NextResponse.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
+    return unauthorizedError();
   }
 
   // Parse and validate request body
@@ -97,27 +84,17 @@ export async function PATCH(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return errorResponse("Invalid JSON body");
   }
 
   const parseResult = updateProfileSchema.safeParse(body);
   if (!parseResult.success) {
-    return NextResponse.json(
-      {
-        error: "Validation failed",
-        details: parseResult.error.flatten().fieldErrors,
-      },
-      { status: 400 }
-    );
+    return errorResponse("Validation failed", 400, parseResult.error.flatten().fieldErrors as Record<string, string[]>);
   }
 
   const { name, avatarUrl } = parseResult.data;
 
   try {
-    // Update user in database
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -134,20 +111,15 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      data: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        avatarUrl: updatedUser.image,
-        emailVerified: updatedUser.emailVerified,
-        createdAt: updatedUser.createdAt.toISOString(),
-      },
+    return successResponse({
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      avatarUrl: updatedUser.image,
+      emailVerified: updatedUser.emailVerified,
+      createdAt: updatedUser.createdAt.toISOString(),
     });
   } catch {
-    return NextResponse.json(
-      { error: "Failed to update profile" },
-      { status: 500 }
-    );
+    return serverError("Failed to update profile");
   }
 }

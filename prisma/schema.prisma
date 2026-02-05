@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum EmailStatus {
@@ -18,7 +19,6 @@ enum Plan {
   FREE
   BASIC
   PRO
-  ENTERPRISE
 }
 
 enum SubscriptionStatus {

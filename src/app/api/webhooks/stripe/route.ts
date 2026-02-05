@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/payment/stripe";
 import prisma from "@/lib/db";
+import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,11 +80,15 @@ async function markEventProcessed(eventId: string, eventType: string): Promise<v
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limiting: 100 requests per minute for webhooks
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.webhook, "stripe-webhook");
+  if (rateLimitResult) return rateLimitResult;
+
   const webhookSecret = getWebhookSecret();
   if (!webhookSecret) {
     console.error("STRIPE_WEBHOOK_SECRET is not set");
     return NextResponse.json(
-      { error: "STRIPE_WEBHOOK_SECRET is not set" },
+      { error: "Webhook configuration error" },
       { status: 500 }
     );
   }

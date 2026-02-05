@@ -12,11 +12,13 @@ interface VerifyEmailPageProps {
 
 type VerificationState = "verifying" | "success" | "error" | "expired";
 
+
 export default function VerifyEmailPage({ params }: VerifyEmailPageProps) {
   const router = useRouter();
   const [state, setState] = useState<VerificationState>("verifying");
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(3);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const { token } = use(params);
 
   useEffect(() => {
@@ -58,18 +60,19 @@ export default function VerifyEmailPage({ params }: VerifyEmailPageProps) {
   }, [token, router]);
 
   const handleResend = async () => {
+    setResendMessage(null);
     try {
       const response = await fetch("/api/auth/resend-verification", {
         method: "POST",
       });
 
       if (response.ok) {
-        alert("Verification email sent! Please check your inbox.");
+        setResendMessage("Verification email sent! Please check your inbox.");
       } else {
-        alert("Failed to resend email. Please try again.");
+        setResendMessage("Failed to resend email. Please try again.");
       }
     } catch {
-      alert("An error occurred. Please try again.");
+      setResendMessage("An error occurred. Please try again.");
     }
   };
 
@@ -123,6 +126,9 @@ export default function VerifyEmailPage({ params }: VerifyEmailPageProps) {
               <Button onClick={handleResend} className="mt-6">
                 Resend Verification Email
               </Button>
+              {resendMessage && (
+                <p className="mt-3 text-sm text-muted-foreground">{resendMessage}</p>
+              )}
             </>
           )}
 
@@ -143,6 +149,9 @@ export default function VerifyEmailPage({ params }: VerifyEmailPageProps) {
                   Go to Sign In
                 </Button>
               </div>
+              {resendMessage && (
+                <p className="mt-3 text-sm text-muted-foreground">{resendMessage}</p>
+              )}
             </>
           )}
         </CardContent>

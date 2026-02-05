@@ -14,11 +14,11 @@ export function AuthCard({ title, description, children }: Props) {
   return (
     <main className="flex min-h-screen">
       {/* Left side - Branding/Illustration */}
-      <div className="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-between animate-gradient bg-linear-to-br from-indigo-500 via-violet-500 to-cyan-600 p-12 text-white relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 lg:flex-col lg:justify-between animate-gradient bg-linear-to-br from-red-700 via-red-600 to-amber-600 p-12 text-white relative overflow-hidden">
         {/* Background decorations */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-amber-400/20 blur-3xl" />
           <div className="absolute right-1/4 top-1/2 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
         </div>
 
@@ -86,10 +86,10 @@ export function AuthCard({ title, description, children }: Props) {
       {/* Right side - Form */}
       <div className="flex w-full flex-col lg:w-1/2">
         {/* Mobile brand banner */}
-        <div className="relative overflow-hidden bg-linear-to-br from-indigo-500 via-violet-500 to-cyan-600 px-6 pb-8 pt-12 text-white lg:hidden">
+        <div className="relative overflow-hidden bg-linear-to-br from-red-700 via-red-600 to-amber-600 px-6 pb-8 pt-12 text-white lg:hidden">
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
+            <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-amber-400/20 blur-3xl" />
           </div>
           <div className="relative">
             <Link href="/" className="flex items-center gap-3">

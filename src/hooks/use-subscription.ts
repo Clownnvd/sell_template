@@ -33,8 +33,8 @@ export function useSubscription() {
     setIsLoadingSubscription(true);
     try {
       const response = await fetch("/api/user/subscription");
-      const data = await response.json();
-      if (data.data) {
+      const data: ApiResponse<SubscriptionData> = await response.json();
+      if (data.success && data.data) {
         setSubscription(data.data);
       }
     } catch {

@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import prisma from "@/lib/db";
-import { sendReactEmailSafe } from "@/lib/email/resend";
+import { sendReactEmail } from "@/lib/email/resend";
 
 import { ResetPasswordTemplate } from "@/lib/email/templates/reset-password";
 import { VerifyEmailTemplate } from "@/lib/email/templates/verify-email";
@@ -17,7 +17,7 @@ export const auth = betterAuth({
     requireEmailVerification: false, // Set to true when RESEND_API_KEY is configured
 
     sendResetPassword: async ({ user, url }) => {
-      sendReactEmailSafe({
+      await sendReactEmail({
         to: user.email,
         subject: "Reset your password",
         react: ResetPasswordTemplate({
@@ -34,7 +34,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
 
     sendVerificationEmail: async ({ user, url }) => {
-      sendReactEmailSafe({
+      await sendReactEmail({
         to: user.email,
         subject: "Verify your email",
         react: VerifyEmailTemplate({
