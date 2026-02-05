@@ -1,4 +1,4 @@
 export * from "./use-auth";
 export * from "./use-locale";
 export * from "./use-password";
-export * from "./use-subscription";
+export * from "./use-purchase";

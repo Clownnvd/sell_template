@@ -1,99 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
-import { ChevronDown, HelpCircle } from "lucide-react";
-
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/utils/cn";
 
-type FAQKey = "changePlan" | "paymentMethods" | "refunds" | "production" | "selfHost" | "support";
-
-const faqKeys: FAQKey[] = ["changePlan", "paymentMethods", "refunds", "production", "selfHost", "support"];
-
-function FAQItem({ question, answer, isOpen, onToggle }: {
-  question: string;
-  answer: string;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className={cn("border-b border-border/50 last:border-0", isOpen && "border-red-500/20")}>
-      <button
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-red-600 dark:hover:text-red-400 sm:py-6"
-      >
-        <span className="font-medium">{question}</span>
-        <ChevronDown
-          className={cn(
-            "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
-            isOpen && "rotate-180 text-red-600 dark:text-red-400"
-          )}
-        />
-      </button>
-      <div
-        className={cn(
-          "grid transition-all duration-300 ease-in-out",
-          isOpen ? "grid-rows-[1fr] pb-6" : "grid-rows-[0fr]"
-        )}
-      >
-        <div className="overflow-hidden">
-          <p className="leading-relaxed text-muted-foreground pr-12">{answer}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+const faqs = [
+  {
+    question: "What do I get after purchase?",
+    answer: "You get full access to the private GitHub repository containing the complete source code. This includes authentication, Stripe payments, dashboard, email system, i18n, and all the infrastructure code.",
+  },
+  {
+    question: "How do I get the code?",
+    answer: "After purchase, enter your GitHub username in the dashboard. We'll send you a collaborator invite to the private repository. Accept the invite and clone the repo.",
+  },
+  {
+    question: "Do I get lifetime updates?",
+    answer: "Yes. As a collaborator on the repo, you'll have access to all future updates, bug fixes, and new features pushed to the repository.",
+  },
+  {
+    question: "Can I use this for multiple projects?",
+    answer: "Yes. You can use King Template for as many projects as you want. There are no per-project licenses or restrictions.",
+  },
+  {
+    question: "What's the refund policy?",
+    answer: "We offer a 30-day money-back guarantee. If you're not satisfied, contact us for a full refund.",
+  },
+  {
+    question: "Do I need a GitHub account?",
+    answer: "Yes, a GitHub account is required to access the repository. You can create one for free at github.com.",
+  },
+];
 
 export function FAQSection() {
-  const t = useTranslations("landing.faq");
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="relative scroll-mt-24 overflow-hidden bg-muted/20">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-96 w-96 -translate-x-1/2 rounded-full bg-red-500/5 blur-[100px]" />
-      </div>
+    <section id="faq" className="bg-zinc-50 px-4 py-24 sm:px-6 lg:px-8 dark:bg-zinc-900/50">
+      <div className="mx-auto max-w-2xl">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-white">
+            Frequently asked questions
+          </h2>
+        </div>
 
-      <div className="container mx-auto max-w-7xl px-4 py-20 md:py-32">
-        <div className="grid gap-12 lg:grid-cols-5 lg:gap-16">
-          <div className="lg:col-span-2">
-            <div className="sticky top-24">
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/5 px-4 py-2 text-sm font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
-                <HelpCircle className="h-4 w-4" />
-                {t("badge")}
-              </div>
-              <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
-                {t("title")}{" "}
-                <span className="bg-linear-to-r from-red-600 via-red-500 to-amber-500 bg-clip-text text-transparent dark:from-red-500 dark:to-amber-400">
-                  {t("titleHighlight")}
+        <div className="mt-12 divide-y divide-zinc-200 dark:divide-zinc-800">
+          {faqs.map((faq, index) => (
+            <div key={index}>
+              <button
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                className="flex w-full items-center justify-between py-5 text-left"
+              >
+                <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                  {faq.question}
                 </span>
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">{t("description")}</p>
-
-              <div className="mt-8">
-                <a
-                  href="/contact"
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-700"
-                >
-                  {t("contactSupport")}
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            <div className="rounded-2xl border border-border/50 bg-card/50 px-6 shadow-card backdrop-blur-sm">
-              {faqKeys.map((key, index) => (
-                <FAQItem
-                  key={key}
-                  question={t(`items.${key}.q`)}
-                  answer={t(`items.${key}.a`)}
-                  isOpen={openIndex === index}
-                  onToggle={() => setOpenIndex(openIndex === index ? null : index)}
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-zinc-400 transition-transform",
+                    openIndex === index && "rotate-180"
+                  )}
                 />
-              ))}
+              </button>
+              {openIndex === index && (
+                <p className="pb-5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  {faq.answer}
+                </p>
+              )}
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>

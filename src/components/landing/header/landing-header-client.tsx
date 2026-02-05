@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { PurchaseDropdown } from "@/components/landing/header/purchase-dropdown";
 import { cn } from "@/utils/cn";
 
 type NavItem = { label: string; href: string };
@@ -37,17 +36,19 @@ export function LandingHeaderClient({
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-300",
         scrolled
-          ? "border-b border-border/40 bg-background/90 shadow-subtle backdrop-blur-xl"
+          ? "border-b border-zinc-200 bg-white/90 shadow-sm backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90"
           : "bg-transparent"
       )}
     >
-      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-        {/* Logo - Ferrari style */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-red-600 to-red-800 text-white shadow-md dark:from-red-500 dark:to-red-700">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
             <span className="text-sm font-bold">K</span>
           </div>
-          <span className="text-base font-semibold tracking-tight">King Template</span>
+          <span className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
+            King Template
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -56,7 +57,7 @@ export function LandingHeaderClient({
             <a
               key={item.href}
               href={item.href}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-500/5 hover:text-foreground dark:hover:bg-red-500/10"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
             >
               {item.label}
             </a>
@@ -69,11 +70,22 @@ export function LandingHeaderClient({
           <ThemeToggle />
 
           {isAuthed ? (
-            <Button asChild className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700">
+            <Button asChild variant="outline" size="sm">
               <Link href="/dashboard">{t("dashboard")}</Link>
             </Button>
           ) : (
-            <PurchaseDropdown />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/sign-in">{t("signIn")}</Link>
+              </Button>
+              <Link
+                href="/sign-up"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+              >
+                Buy Now — $99
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
           )}
         </div>
 
@@ -83,12 +95,12 @@ export function LandingHeaderClient({
           <ThemeToggle />
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-colors hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-white"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label="Toggle menu"
           >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
@@ -97,16 +109,16 @@ export function LandingHeaderClient({
       <div
         className={cn(
           "overflow-hidden transition-all duration-300 ease-in-out md:hidden",
-          open ? "max-h-96 border-t border-border/40 animate-slide-down" : "max-h-0"
+          open ? "max-h-96 border-t border-zinc-200 dark:border-zinc-800" : "max-h-0"
         )}
       >
-        <div className="container mx-auto max-w-7xl bg-background/95 px-4 py-4 backdrop-blur-lg">
+        <div className="mx-auto max-w-5xl bg-white/95 px-4 py-4 backdrop-blur-lg dark:bg-zinc-950/95">
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-red-500/5 hover:text-foreground"
+                className="rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
                 onClick={() => setOpen(false)}
               >
                 {item.label}
@@ -115,19 +127,20 @@ export function LandingHeaderClient({
           </nav>
 
           {isAuthed ? (
-            <div className="mt-4 border-t border-border/40 pt-4">
-              <Button asChild className="w-full bg-red-600 hover:bg-red-700" onClick={() => setOpen(false)}>
+            <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+              <Button asChild variant="outline" className="w-full" onClick={() => setOpen(false)}>
                 <Link href="/dashboard">{t("dashboard")}</Link>
               </Button>
             </div>
           ) : (
-            <div className="mt-4 flex flex-col gap-2 border-t border-border/40 pt-4">
+            <div className="mt-4 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
               <Link
-                href="/pricing"
+                href="/sign-up"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-xl bg-linear-to-r from-amber-600 to-amber-500 px-4 py-3 text-sm font-semibold text-white shadow-md transition-all hover:from-amber-500 hover:to-amber-400"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
               >
-                Purchase — View Plans
+                Buy Now — $99
+                <ArrowRight className="size-4" />
               </Link>
               <Button variant="outline" asChild onClick={() => setOpen(false)}>
                 <Link href="/sign-in">{t("signIn")}</Link>

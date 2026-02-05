@@ -12,20 +12,16 @@ import {
 } from "@/lib/api/response";
 
 export async function POST(req: NextRequest) {
-  // CSRF protection
   const csrfResult = verifyCsrf(req);
   if (csrfResult) return csrfResult;
 
-  // Rate limiting: 5 requests per minute for checkout
   const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "checkout");
   if (rateLimitResult) return rateLimitResult;
 
   try {
-    // Require authentication
     const session = await requireAuth();
     const user = session.user;
 
-    // Parse and validate request body
     const body = await req.json();
     const validation = createCheckoutSchema.safeParse(body);
 
@@ -33,17 +29,14 @@ export async function POST(req: NextRequest) {
       return validationError(validation.error);
     }
 
-    const { priceId, successUrl, cancelUrl } = validation.data;
+    const { successUrl, cancelUrl } = validation.data;
 
-    // Default URLs if not provided
-    const defaultSuccessUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`;
-    const defaultCancelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=canceled`;
+    const defaultSuccessUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/purchase?success=true`;
+    const defaultCancelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/purchase?canceled=true`;
 
-    // Create checkout session
     const checkoutSession = await createCheckoutSession({
       userId: user.id,
       email: user.email,
-      priceId,
       successUrl: successUrl || defaultSuccessUrl,
       cancelUrl: cancelUrl || defaultCancelUrl,
     });
@@ -54,10 +47,14 @@ export async function POST(req: NextRequest) {
 
     return successResponse({ url: checkoutSession.url });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return errorResponse("Unauthorized", 401);
+    if (error instanceof Error) {
+      if (error.message.includes("Unauthorized")) {
+        return errorResponse("Unauthorized", 401);
+      }
+      if (error.message.includes("already purchased")) {
+        return errorResponse(error.message, 409);
+      }
     }
-
     return serverError();
   }
 }
