@@ -1,5 +1,7 @@
 "use client";
 
+import { Marquee } from "@/components/ui/marquee";
+
 function NextjsLogo({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 180 180" fill="none">
@@ -83,17 +85,20 @@ const LOGOS: LogoItem[] = [
 
 export function LogosSection() {
   return (
-    <section className="border-y border-zinc-100 dark:border-zinc-800/50">
+    <section className="border-y border-border">
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <p className="text-center text-sm font-medium text-zinc-400 dark:text-zinc-500">
+        <p className="text-center text-sm font-medium text-muted-foreground">
           Built with the best tools in the ecosystem
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+        <Marquee
+          className="mt-8 [--duration:25s] [--gap:3rem]"
+          pauseOnHover
+        >
           {LOGOS.map((logo) => (
             <div
               key={logo.name}
-              className="flex items-center gap-2.5 text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+              className="flex items-center gap-2.5 text-muted-foreground transition-colors hover:text-primary"
             >
               <logo.icon className="size-6 shrink-0" />
               <span className="text-sm font-medium whitespace-nowrap">
@@ -101,7 +106,7 @@ export function LogosSection() {
               </span>
             </div>
           ))}
-        </div>
+        </Marquee>
       </div>
     </section>
   );

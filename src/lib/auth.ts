@@ -14,7 +14,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // Set to true when RESEND_API_KEY is configured
+    requireEmailVerification: Boolean(process.env.RESEND_API_KEY),
 
     sendResetPassword: async ({ user, url }) => {
       await sendReactEmail({
@@ -49,13 +49,13 @@ export const auth = betterAuth({
   // Set GOOGLE_CLIENT_ID/SECRET and GITHUB_CLIENT_ID/SECRET to enable
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId: process.env.GOOGLE_CLIENT_ID || "disabled",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "disabled",
       enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID ?? "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
+      clientId: process.env.GITHUB_CLIENT_ID || "disabled",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "disabled",
       enabled: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
     },
   },

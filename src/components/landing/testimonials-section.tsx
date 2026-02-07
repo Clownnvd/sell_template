@@ -1,67 +1,138 @@
+"use client";
+
 import { Star } from "lucide-react";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { Marquee } from "@/components/ui/marquee";
+import { cn } from "@/utils/cn";
 
 const testimonials = [
   {
     name: "Minh Tran",
     role: "Indie Maker",
-    quote: "I shipped billing + auth in a weekend. The structure is clean and easy to extend. Best template I've used.",
+    quote:
+      "Shipped my SaaS in a weekend — billing, auth, dashboard, all done. Saved me 3+ weeks of boilerplate. Best $99 I've spent.",
     rating: 5,
     avatar: "MT",
+    color: "bg-red-600",
   },
   {
     name: "Sarah Chen",
     role: "Full-Stack Developer",
-    quote: "Saved me weeks of boilerplate. The Stripe integration and auth system were exactly what I needed.",
+    quote:
+      "The Stripe integration alone saved me a week. Already launched 2 projects with King Template — paid for itself 10x over.",
     rating: 5,
     avatar: "SC",
+    color: "bg-amber-600",
   },
   {
     name: "Alex Kim",
     role: "Startup Founder",
-    quote: "Production-ready from day one. The security headers, rate limiting, and CSRF protection gave me confidence to ship fast.",
+    quote:
+      "Production-ready security from day one. Rate limiting, CSRF, webhooks — shipped with confidence in under 48 hours.",
     rating: 5,
     avatar: "AK",
+    color: "bg-emerald-600",
+  },
+  {
+    name: "David Park",
+    role: "Solo Developer",
+    quote:
+      "The auth system is rock solid. Better Auth with GitHub and Google OAuth just works out of the box. No more auth headaches.",
+    rating: 5,
+    avatar: "DP",
+    color: "bg-blue-600",
+  },
+  {
+    name: "Lisa Wang",
+    role: "Tech Lead",
+    quote:
+      "Clean codebase, great patterns. The i18n setup and email templates alone saved my team days of work. Highly recommended.",
+    rating: 5,
+    avatar: "LW",
+    color: "bg-purple-600",
+  },
+  {
+    name: "James Lee",
+    role: "Freelance Developer",
+    quote:
+      "I use King Template for every new client project now. The dashboard and payment flow are production-ready from minute one.",
+    rating: 5,
+    avatar: "JL",
+    color: "bg-cyan-600",
   },
 ];
 
+function TestimonialCard({
+  name,
+  role,
+  quote,
+  rating,
+  avatar,
+  color,
+}: (typeof testimonials)[number]) {
+  return (
+    <div className={cn(
+      "w-72 shrink-0 rounded-xl border border-border bg-card p-6 shadow-sm",
+      "transition-all hover:shadow-lg hover:border-primary/20",
+    )}>
+      <div className="flex gap-0.5">
+        {Array.from({ length: rating }).map((_, j) => (
+          <Star key={j} className="size-4 fill-amber-400 text-amber-400" />
+        ))}
+      </div>
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+        &ldquo;{quote}&rdquo;
+      </p>
+      <div className="mt-4 flex items-center gap-3">
+        <div
+          className={cn(
+            "flex size-8 items-center justify-center rounded-full text-xs font-medium text-white",
+            color,
+          )}
+        >
+          {avatar}
+        </div>
+        <div>
+          <div className="text-sm font-medium text-foreground">{name}</div>
+          <div className="text-xs text-muted-foreground">{role}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function TestimonialsSection() {
+  const firstRow = testimonials.slice(0, 3);
+  const secondRow = testimonials.slice(3, 6);
+
   return (
     <section className="px-4 py-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-white">
-            Loved by developers
-          </h2>
-          <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-            See what builders are saying about King Template.
-          </p>
-        </div>
+        <ScrollReveal>
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              Loved by{" "}
+              <span className="text-gradient">developers</span>
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              See what builders are saying about King Template.
+            </p>
+          </div>
+        </ScrollReveal>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-3">
-          {testimonials.map((t) => (
-            <div
-              key={t.name}
-              className="rounded-xl border border-zinc-100 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <div className="flex gap-0.5">
-                {Array.from({ length: t.rating }).map((_, i) => (
-                  <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                &ldquo;{t.quote}&rdquo;
-              </p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="flex size-8 items-center justify-center rounded-full bg-zinc-100 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                  {t.avatar}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-zinc-900 dark:text-white">{t.name}</div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">{t.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="relative mt-12 flex flex-col gap-4 overflow-hidden">
+          <Marquee pauseOnHover className="[--duration:30s] [--gap:1rem]">
+            {firstRow.map((t) => (
+              <TestimonialCard key={t.name} {...t} />
+            ))}
+          </Marquee>
+          <Marquee pauseOnHover reverse className="[--duration:30s] [--gap:1rem]">
+            {secondRow.map((t) => (
+              <TestimonialCard key={t.name} {...t} />
+            ))}
+          </Marquee>
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-1/6 bg-linear-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/6 bg-linear-to-l from-background to-transparent" />
         </div>
       </div>
     </section>

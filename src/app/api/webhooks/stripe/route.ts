@@ -35,13 +35,12 @@ export async function POST(req: NextRequest) {
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error("Webhook configuration error");
-    return NextResponse.json({ error: "Webhook configuration error" }, { status: 500 });
+    return NextResponse.json({ received: false }, { status: 500 });
   }
 
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
-    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
+    return NextResponse.json({ received: false }, { status: 400 });
   }
 
   const body = await req.text();
@@ -49,13 +48,12 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err) {
-    console.error("Webhook signature verification failed:", err);
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  } catch {
+    return NextResponse.json({ received: false }, { status: 400 });
   }
 
   if (await isEventProcessed(event.id)) {
-    return NextResponse.json({ received: true, duplicate: true });
+    return NextResponse.json({ received: true });
   }
 
   try {
@@ -69,9 +67,9 @@ export async function POST(req: NextRequest) {
 
     await markEventProcessed(event.id, event.type);
     return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error("Error processing webhook:", error);
-    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+  } catch {
+    // Return 500 so Stripe retries the webhook
+    return NextResponse.json({ received: false }, { status: 500 });
   }
 }
 
@@ -80,8 +78,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const userId = session.metadata?.userId;
   if (!userId) {
-    console.error("Missing userId in checkout session metadata");
-    return;
+    throw new Error("Missing userId in checkout session metadata");
+  }
+
+  // Validate user exists in database
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, githubUsername: true },
+  });
+
+  if (!user) {
+    throw new Error(`User not found: ${userId}`);
   }
 
   const paymentIntentId =
@@ -90,8 +97,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       : session.payment_intent?.id;
 
   if (!paymentIntentId) {
-    console.error("Missing payment_intent in checkout session");
+    throw new Error("Missing payment_intent in checkout session");
+  }
+
+  // Idempotency: skip if this payment was already recorded
+  const existingPurchase = await prisma.purchase.findUnique({
+    where: { stripePaymentId: paymentIntentId },
+  });
+
+  if (existingPurchase) {
+    // Retry GitHub invite if it failed previously
+    if (!existingPurchase.githubInviteSent && user.githubUsername) {
+      await tryInviteCollaborator(existingPurchase.id, user.githubUsername);
+    }
     return;
+  }
+
+  const amount = session.amount_total;
+  if (!amount || amount < 9900) {
+    throw new Error(`Invalid payment amount: ${amount}. Expected at least 9900 cents.`);
   }
 
   const customerId = getCustomerId(session.customer);
@@ -102,27 +126,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripePaymentId: paymentIntentId,
       stripeCustomerId: customerId,
       productType: "KING_TEMPLATE",
-      amount: session.amount_total ?? 9900,
+      amount,
       status: "COMPLETED",
     },
   });
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { githubUsername: true, email: true },
-  });
+  if (user.githubUsername) {
+    await tryInviteCollaborator(purchase.id, user.githubUsername);
+  }
+}
 
-  if (user?.githubUsername) {
-    try {
-      const result = await inviteCollaborator(user.githubUsername);
-      if (result.success) {
-        await prisma.purchase.update({
-          where: { id: purchase.id },
-          data: { githubInviteSent: true, githubUsername: user.githubUsername },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to invite GitHub collaborator:", error);
+async function tryInviteCollaborator(
+  purchaseId: string,
+  githubUsername: string,
+): Promise<void> {
+  try {
+    const result = await inviteCollaborator(githubUsername);
+    if (result.success) {
+      await prisma.purchase.update({
+        where: { id: purchaseId },
+        data: { githubInviteSent: true, githubUsername },
+      });
     }
+  } catch {
+    // GitHub invite failure is non-fatal — user can retry via dashboard
   }
 }

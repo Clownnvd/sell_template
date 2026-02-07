@@ -40,10 +40,10 @@ export async function inviteCollaborator(
     return { success: false, alreadyCollaborator: false, error: "GitHub user not found" };
   }
 
-  const errorData = await response.json().catch(() => ({}));
+  // Don't leak GitHub API error details to the client
   return {
     success: false,
     alreadyCollaborator: false,
-    error: (errorData as { message?: string }).message || `GitHub API error: ${response.status}`,
+    error: "Failed to send GitHub invitation. Please try again later.",
   };
 }

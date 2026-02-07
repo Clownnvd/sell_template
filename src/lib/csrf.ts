@@ -65,16 +65,8 @@ export function verifyCsrf(req: NextRequest): NextResponse | null {
     }
   }
 
-  // If neither Origin nor Referer is present, check for custom header
-  // Modern fetch APIs can set custom headers, but forms cannot
-  // This provides defense-in-depth against CSRF attacks
-  const customHeader = req.headers.get("x-requested-with");
-  if (customHeader === "fetch") {
-    return null; // Request came from JavaScript fetch
-  }
-
-  // Reject requests without any origin verification
-  // This blocks form-based CSRF attacks
+  // Reject requests without Origin or Referer
+  // Browsers always send Origin on same-origin fetch() and form POST
   return NextResponse.json(
     { success: false, error: "Missing request origin" },
     { status: 403 }

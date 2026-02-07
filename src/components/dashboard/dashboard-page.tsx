@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { usePurchase } from "@/hooks/use-purchase";
 
-import { Check, Copy, ExternalLink, Loader2, X, ArrowRight } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2, X, ArrowRight, QrCode } from "lucide-react";
+import { githubUsernameSchema } from "@/lib/validations/github";
 import { DashboardHeader } from "./header";
 
 type SessionUser = {
@@ -17,11 +18,17 @@ type SessionData = {
   user?: SessionUser | null;
 } | null;
 
+const REPO_OWNER = process.env.NEXT_PUBLIC_GITHUB_REPO_OWNER || "your-org";
+const REPO_NAME = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || "king-template";
+const REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
+const CLONE_CMD = `git clone ${REPO_URL}.git`;
+
 export function DashboardPage() {
   const { data } = useSession();
   const session = data as SessionData;
-  const { purchase, hasPurchased, isLoadingPurchase, createCheckout } = usePurchase();
+  const { purchase, hasPurchased, isLoadingPurchase, fetchError, createCheckout } = usePurchase();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [billingBanner, setBillingBanner] = useState<"success" | "canceled" | null>(null);
   const [githubUsername, setGithubUsername] = useState("");
@@ -74,8 +81,9 @@ export function DashboardPage() {
       setUsernameError("Please enter your GitHub username");
       return;
     }
-    if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(trimmed)) {
-      setUsernameError("Invalid GitHub username format");
+    const parseResult = githubUsernameSchema.safeParse(trimmed);
+    if (!parseResult.success) {
+      setUsernameError(parseResult.error.issues[0]?.message || "Invalid GitHub username format");
       return;
     }
 
@@ -85,7 +93,7 @@ export function DashboardPage() {
     try {
       const res = await fetch("/api/user/github-username", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
         body: JSON.stringify({ githubUsername: trimmed }),
       });
 
@@ -105,7 +113,7 @@ export function DashboardPage() {
   }, [githubUsername]);
 
   const handleCopyRepo = useCallback(() => {
-    navigator.clipboard.writeText("git clone https://github.com/your-org/king-template.git");
+    navigator.clipboard.writeText(CLONE_CMD);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, []);
@@ -115,7 +123,7 @@ export function DashboardPage() {
       <div className="min-h-screen">
         <DashboardHeader title="Dashboard" />
         <div className="flex items-center justify-center p-20">
-          <Loader2 className="size-6 animate-spin text-zinc-400" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -144,12 +152,19 @@ export function DashboardPage() {
           </div>
         )}
 
+        {/* Fetch error */}
+        {fetchError && (
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            <p className="font-medium">{fetchError}</p>
+          </div>
+        )}
+
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             {greeting}, {userName}!
           </h1>
-          <p className="mt-1 text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1 text-muted-foreground">
             {hasPurchased
               ? "Manage your King Template access below."
               : "Get started by purchasing King Template."}
@@ -160,24 +175,24 @@ export function DashboardPage() {
           /* --- PURCHASED STATE --- */
           <div className="space-y-6">
             {/* Purchase status card */}
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="border-gradient rounded-xl border border-border bg-card p-6">
               <div className="flex items-center gap-3">
                 <div className="flex size-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
                   <Check className="size-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-zinc-900 dark:text-white">Purchase Complete</h2>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    King Template — ${purchase?.amount ? (purchase.amount / 100).toFixed(0) : "99"} one-time payment
+                  <h2 className="font-semibold text-foreground">Purchase Complete</h2>
+                  <p className="text-sm text-muted-foreground">
+                    King Template — one-time payment
                   </p>
                 </div>
               </div>
             </div>
 
             {/* GitHub username form */}
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="font-semibold text-zinc-900 dark:text-white">GitHub Access</h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="font-semibold text-foreground">GitHub Access</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
                 {purchase?.githubInviteSent
                   ? "A collaborator invite has been sent to your GitHub account."
                   : "Enter your GitHub username to receive a collaborator invite to the private repository."}
@@ -192,12 +207,12 @@ export function DashboardPage() {
                     setUsernameError(null);
                   }}
                   placeholder="your-github-username"
-                  className="flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-400 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:focus:border-zinc-600 dark:focus:bg-zinc-800"
+                  className="flex-1 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:bg-background"
                 />
                 <button
                   onClick={handleSaveGithubUsername}
                   disabled={isSavingUsername}
-                  className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                  className="shine-effect inline-flex items-center gap-2 rounded-lg bg-gradient-primary px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg disabled:opacity-50"
                 >
                   {isSavingUsername ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -209,7 +224,7 @@ export function DashboardPage() {
               </div>
 
               {usernameError && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{usernameError}</p>
+                <p className="mt-2 text-sm text-destructive">{usernameError}</p>
               )}
 
               {purchase?.githubInviteSent && (
@@ -221,19 +236,19 @@ export function DashboardPage() {
             </div>
 
             {/* Clone instructions */}
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-              <h2 className="font-semibold text-zinc-900 dark:text-white">Get Started</h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-xl border border-border bg-card p-6">
+              <h2 className="font-semibold text-foreground">Get Started</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
                 After accepting the GitHub invite, clone the repository to start building.
               </p>
 
               <div className="mt-4 flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-zinc-100 px-3 py-2.5 font-mono text-sm text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                  git clone https://github.com/your-org/king-template.git
+                <code className="flex-1 rounded-lg bg-accent/30 px-3 py-2.5 font-mono text-sm text-foreground">
+                  {CLONE_CMD}
                 </code>
                 <button
                   onClick={handleCopyRepo}
-                  className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-colors hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:text-white"
+                  className="inline-flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-primary"
                   title="Copy to clipboard"
                 >
                   {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
@@ -241,10 +256,10 @@ export function DashboardPage() {
               </div>
 
               <a
-                href="https://github.com/your-org/king-template"
+                href={REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-zinc-900 hover:underline dark:text-white"
+                className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
                 Open repository on GitHub
                 <ExternalLink className="size-3.5" />
@@ -253,33 +268,43 @@ export function DashboardPage() {
           </div>
         ) : (
           /* --- NOT PURCHASED STATE --- */
-          <div className="rounded-xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
+          <div className="border-gradient rounded-xl border border-border bg-card p-8 text-center">
+            <h2 className="text-xl font-semibold text-foreground">
               Get King Template
             </h2>
-            <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-              One-time payment of $99. Get lifetime access to the full source code, future updates, and GitHub repository access.
+            <p className="mt-2 text-muted-foreground">
+              One-time payment. Get lifetime access to the full source code, future updates, and GitHub repository access.
             </p>
 
-            <button
-              onClick={handleBuyNow}
-              disabled={isCheckingOut}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-            >
-              {isCheckingOut ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Redirecting to checkout...
-                </>
-              ) : (
-                <>
-                  Buy Now — $99
-                  <ArrowRight className="size-4" />
-                </>
-              )}
-            </button>
+            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <button
+                onClick={handleBuyNow}
+                disabled={isCheckingOut}
+                className="shine-effect inline-flex items-center gap-2 rounded-lg bg-gradient-primary px-8 py-3 text-sm font-medium text-white transition-all hover:shadow-lg disabled:opacity-50"
+              >
+                {isCheckingOut ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Redirecting...
+                  </>
+                ) : (
+                  <>
+                    Pay with Card — $99
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </button>
 
-            <p className="mt-3 text-xs text-zinc-400 dark:text-zinc-500">
+              <button
+                onClick={() => router.push("/payment/sepay")}
+                className="inline-flex items-center gap-2 rounded-lg border border-primary/20 px-6 py-3 text-sm font-medium text-foreground transition-all hover:bg-primary/5 hover:border-primary/40"
+              >
+                <QrCode className="size-4 text-primary" />
+                VietQR — 2.490.000 VND
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground">
               30-day money-back guarantee. Instant GitHub access after purchase.
             </p>
           </div>

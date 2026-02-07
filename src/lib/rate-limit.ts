@@ -77,9 +77,11 @@ if (typeof setInterval !== "undefined" && !redis) {
 }
 
 function getClientIP(req: NextRequest): string {
+  // Use rightmost IP (set by proxy/load balancer, not spoofable by client)
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    const ips = forwarded.split(",").map((ip) => ip.trim());
+    return ips[ips.length - 1];
   }
 
   const realIP = req.headers.get("x-real-ip");

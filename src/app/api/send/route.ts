@@ -25,12 +25,15 @@ export async function POST(req: NextRequest) {
   const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "send-email");
   if (rateLimitResult) return rateLimitResult;
 
+  const userEmail = session.user.email;
+  const userName = session.user.name?.split(" ")[0] || "there";
+
   try {
     const { data, error } = await resend.emails.send({
-      from: 'Acme <onboarding@resend.dev>',
-      to: ['delivered@resend.dev'],
-      subject: 'Hello world',
-      react: WelcomeEmail({ firstName: 'John' }),
+      from: `King Template <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
+      to: [userEmail],
+      subject: "Welcome to King Template",
+      react: WelcomeEmail({ firstName: userName }),
     });
 
     if (error) {

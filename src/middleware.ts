@@ -18,6 +18,7 @@ const securityHeaders = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-XSS-Protection": "1; mode=block",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
   "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://www.youtube.com;",
 };
 
@@ -76,12 +77,6 @@ function applySecurityHeaders(response: NextResponse) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/settings/:path*",
-    "/billing/:path*",
-    "/sign-in",
-    "/sign-up",
-    "/forgot-password",
-    "/reset-password",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

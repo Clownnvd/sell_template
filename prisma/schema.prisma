@@ -15,6 +15,7 @@ enum EmailStatus {
 }
 
 enum PurchaseStatus {
+  PENDING
   COMPLETED
   REFUNDED
 }
@@ -100,23 +101,29 @@ model EmailLog {
 }
 
 model Purchase {
-  id               String         @id @default(cuid())
-  userId           String
-  stripePaymentId  String         @unique
-  stripeCustomerId String?
-  productType      String         @default("KING_TEMPLATE")
-  amount           Int
-  status           PurchaseStatus @default(COMPLETED)
-  githubInviteSent Boolean        @default(false)
-  githubUsername    String?
-  purchasedAt      DateTime       @default(now())
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                 String         @id @default(cuid())
+  userId             String
+  paymentMethod      String         @default("stripe")
+  stripePaymentId    String?        @unique
+  stripeCustomerId   String?
+  sepayTransactionId String?        @unique
+  paymentCode        String?        @unique
+  productType        String         @default("KING_TEMPLATE")
+  amount             Int
+  currency           String         @default("USD")
+  status             PurchaseStatus @default(COMPLETED)
+  githubInviteSent   Boolean        @default(false)
+  githubUsername      String?
+  expiresAt          DateTime?
+  purchasedAt        DateTime       @default(now())
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
+  @@index([paymentCode])
   @@map("purchase")
 }
 

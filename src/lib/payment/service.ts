@@ -50,6 +50,10 @@ export async function createCheckoutSession({
     throw new Error("You have already purchased this product");
   }
 
+  if (!product.stripePriceId) {
+    throw new Error("Stripe price not configured");
+  }
+
   const customerId = await getOrCreateStripeCustomer(userId, email);
 
   const session = await stripe.checkout.sessions.create({

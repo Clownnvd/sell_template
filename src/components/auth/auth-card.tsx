@@ -55,15 +55,15 @@ export function AuthCard({ title, description, children }: Props) {
             <div className="animate-slide-in-left" style={{ animationDelay: "0.2s", animationFillMode: "both" }}>
               <FeatureItem
                 icon={<Zap className="h-5 w-5" />}
-                title="Stripe Integration"
-                description="Subscriptions, webhooks & customer portal"
+                title="Stripe Payments"
+                description="One-time payments, webhooks & checkout"
               />
             </div>
             <div className="animate-slide-in-left" style={{ animationDelay: "0.3s", animationFillMode: "both" }}>
               <FeatureItem
                 icon={<BarChart3 className="h-5 w-5" />}
-                title="Analytics Ready"
-                description="Beautiful dashboard with real-time stats"
+                title="Dashboard Ready"
+                description="Beautiful dashboard with sidebar layout"
               />
             </div>
           </div>

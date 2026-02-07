@@ -19,7 +19,7 @@ export async function register() {
       console.log("[ENV] Server environment variables validated successfully");
       console.log("[ENV] Client environment variables validated successfully");
       console.log(`[ENV] App URL: ${clientEnv.NEXT_PUBLIC_APP_URL}`);
-      console.log(`[ENV] Database: ${serverEnv.DATABASE_URL.split("@")[1]?.split("/")[0] || "configured"}`);
+      console.log(`[ENV] Database: ${serverEnv.DATABASE_URL ? "configured" : "not configured"}`);
     }
   }
 }

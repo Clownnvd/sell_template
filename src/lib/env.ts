@@ -47,10 +47,21 @@ const ServerEnvSchema = z.object({
     .string()
     .regex(/^whsec_/, "STRIPE_WEBHOOK_SECRET must start with 'whsec_'"),
 
+  // GitHub integration (optional — needed for repo invite after purchase)
+  GITHUB_PAT: z.string().optional(),
+  GITHUB_REPO_OWNER: z.string().optional(),
+  GITHUB_REPO_NAME: z.string().optional(),
+
   // Email (optional - only validate if provided)
   RESEND_API_KEY: z
     .string()
     .optional(),
+
+  // SePay (optional — Vietnamese payment gateway)
+  SEPAY_API_KEY: z.string().optional(),
+  SEPAY_BANK_ACCOUNT: z.string().optional(),
+  SEPAY_BANK_CODE: z.string().optional(),
+  SEPAY_WEBHOOK_KEY: z.string().optional(),
 });
 
 const ClientEnvSchema = z.object({
@@ -84,7 +95,14 @@ export const serverEnv = (() => {
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    GITHUB_PAT: process.env.GITHUB_PAT,
+    GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER,
+    GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    SEPAY_API_KEY: process.env.SEPAY_API_KEY,
+    SEPAY_BANK_ACCOUNT: process.env.SEPAY_BANK_ACCOUNT,
+    SEPAY_BANK_CODE: process.env.SEPAY_BANK_CODE,
+    SEPAY_WEBHOOK_KEY: process.env.SEPAY_WEBHOOK_KEY,
   });
 
   if (!parsed.success) {
