@@ -46,6 +46,13 @@ async function markEventProcessed(transactionId: string): Promise<void> {
   });
 }
 
+/**
+ * POST /api/webhooks/sepay
+ * Handles SePay bank transfer webhook notifications.
+ * Matches payment code, completes purchase, triggers GitHub invite.
+ * @auth SePay API key verification
+ * @rateLimit 100/min
+ */
 export async function POST(req: NextRequest) {
   const rateLimitResult = await rateLimit(req, rateLimitPresets.webhook, "sepay-webhook");
   if (rateLimitResult) return rateLimitResult;

@@ -9,14 +9,20 @@ import {
 import {
   successResponse,
   errorResponse,
+  unauthorizedError,
+  notFoundError,
   serverError,
+  ErrorCodes,
 } from "@/lib/api/response";
+import { logRequest } from "@/lib/api/logger";
 
 /**
  * POST /api/checkout/sepay
  * Create a new SePay payment (returns QR code data)
  */
 export async function POST(req: NextRequest) {
+  const start = Date.now();
+
   const csrfResult = verifyCsrf(req);
   if (csrfResult) return csrfResult;
 
@@ -27,6 +33,7 @@ export async function POST(req: NextRequest) {
     const session = await requireAuth();
     const result = await createSepayPurchase(session.user.id);
 
+    logRequest(req, 200, start);
     return successResponse({
       purchaseId: result.purchaseId,
       paymentCode: result.paymentCode,
@@ -39,15 +46,19 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Unauthorized")) {
-        return errorResponse("Unauthorized", 401);
+        logRequest(req, 401, start);
+        return unauthorizedError();
       }
       if (error.message.includes("already purchased")) {
-        return errorResponse(error.message, 409);
+        logRequest(req, 409, start);
+        return errorResponse(error.message, 409, undefined, ErrorCodes.CONFLICT);
       }
       if (error.message.includes("not configured")) {
-        return errorResponse("Vietnamese payment is not available", 503);
+        logRequest(req, 503, start);
+        return errorResponse("Vietnamese payment is not available", 503, undefined, ErrorCodes.SERVICE_UNAVAILABLE);
       }
     }
+    logRequest(req, 500, start);
     return serverError();
   }
 }
@@ -57,6 +68,8 @@ export async function POST(req: NextRequest) {
  * Poll for payment status
  */
 export async function GET(req: NextRequest) {
+  const getStart = Date.now();
+
   const rateLimitResult = await rateLimit(req, rateLimitPresets.relaxed, "sepay-status");
   if (rateLimitResult) return rateLimitResult;
 
@@ -65,19 +78,24 @@ export async function GET(req: NextRequest) {
 
     const purchaseId = req.nextUrl.searchParams.get("id");
     if (!purchaseId) {
-      return errorResponse("Missing purchase ID", 400);
+      logRequest(req, 400, getStart);
+      return errorResponse("Missing purchase ID", 400, undefined, ErrorCodes.VALIDATION_ERROR);
     }
 
     const status = await getSepayPurchaseStatus(purchaseId);
     if (!status) {
-      return errorResponse("Purchase not found", 404);
+      logRequest(req, 404, getStart);
+      return notFoundError("Purchase not found");
     }
 
+    logRequest(req, 200, getStart);
     return successResponse(status);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return errorResponse("Unauthorized", 401);
+      logRequest(req, 401, getStart);
+      return unauthorizedError();
     }
+    logRequest(req, 500, getStart);
     return serverError();
   }
 }

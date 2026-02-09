@@ -44,7 +44,7 @@ export function PricingTeaserSection() {
             <div
               key={plan.key}
               className={cn(
-                "relative rounded-2xl border bg-card p-6 shadow-card transition-all duration-300 hover:shadow-elevated sm:p-8",
+                "relative rounded-2xl border bg-card p-6 shadow-card transition-shadow duration-300 hover:shadow-elevated sm:p-8",
                 plan.highlight
                   ? "border-red-500/40 ring-1 ring-red-500/20"
                   : "border-border/50"

@@ -4,7 +4,8 @@ import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { updateProfileSchema } from "@/lib/validations/profile";
 import { verifyCsrf } from "@/lib/csrf";
-import { successResponse, unauthorizedError, notFoundError, errorResponse, serverError } from "@/lib/api/response";
+import { successResponse, unauthorizedError, notFoundError, errorResponse, serverError, requireJsonBody, ErrorCodes, NO_CACHE_HEADERS } from "@/lib/api/response";
+import { logRequest } from "@/lib/api/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,9 +15,7 @@ export const dynamic = "force-dynamic";
  * Returns the current user's profile
  */
 export async function GET(req: NextRequest) {
-  // Rate limiting: 20 requests per minute
-  const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "profile-get");
-  if (rateLimitResult) return rateLimitResult;
+  const start = Date.now();
 
   const session = await auth.api.getSession({
     headers: req.headers,
@@ -26,6 +25,9 @@ export async function GET(req: NextRequest) {
   if (!userId) {
     return unauthorizedError();
   }
+
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "profile-get", userId);
+  if (rateLimitResult) return rateLimitResult;
 
   try {
     const user = await prisma.user.findUnique({
@@ -41,9 +43,11 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
+      logRequest(req, 404, start, userId);
       return notFoundError("User not found");
     }
 
+    logRequest(req, 200, start, userId);
     return successResponse({
       id: user.id,
       name: user.name,
@@ -51,8 +55,9 @@ export async function GET(req: NextRequest) {
       avatarUrl: user.image,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt.toISOString(),
-    });
+    }, 200, NO_CACHE_HEADERS);
   } catch {
+    logRequest(req, 500, start);
     return serverError("Failed to fetch profile");
   }
 }
@@ -62,13 +67,13 @@ export async function GET(req: NextRequest) {
  * Updates the current user's profile (name, avatarUrl)
  */
 export async function PATCH(req: NextRequest) {
-  // CSRF protection for state-changing operations
+  const patchStart = Date.now();
+
   const csrfResult = verifyCsrf(req);
   if (csrfResult) return csrfResult;
 
-  // Rate limiting: 10 requests per minute (stricter for writes)
-  const rateLimitResult = await rateLimit(req, { maxRequests: 10, interval: 60_000 }, "profile-update");
-  if (rateLimitResult) return rateLimitResult;
+  const ctCheck = requireJsonBody(req);
+  if (ctCheck) return ctCheck;
 
   const session = await auth.api.getSession({
     headers: req.headers,
@@ -79,17 +84,19 @@ export async function PATCH(req: NextRequest) {
     return unauthorizedError();
   }
 
-  // Parse and validate request body
+  const rateLimitResult = await rateLimit(req, { maxRequests: 10, interval: 60_000 }, "profile-update", userId);
+  if (rateLimitResult) return rateLimitResult;
+
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return errorResponse("Invalid JSON body");
+    return errorResponse("Invalid JSON body", 400, undefined, ErrorCodes.VALIDATION_ERROR);
   }
 
   const parseResult = updateProfileSchema.safeParse(body);
   if (!parseResult.success) {
-    return errorResponse("Validation failed", 400, parseResult.error.flatten().fieldErrors as Record<string, string[]>);
+    return errorResponse("Validation failed", 400, parseResult.error.flatten().fieldErrors as Record<string, string[]>, ErrorCodes.VALIDATION_ERROR);
   }
 
   const { name, avatarUrl } = parseResult.data;
@@ -111,6 +118,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    logRequest(req, 200, patchStart, userId);
     return successResponse({
       id: updatedUser.id,
       name: updatedUser.name,
@@ -118,8 +126,9 @@ export async function PATCH(req: NextRequest) {
       avatarUrl: updatedUser.image,
       emailVerified: updatedUser.emailVerified,
       createdAt: updatedUser.createdAt.toISOString(),
-    });
+    }, 200, NO_CACHE_HEADERS);
   } catch {
+    logRequest(req, 500, patchStart, userId);
     return serverError("Failed to update profile");
   }
 }

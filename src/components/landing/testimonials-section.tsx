@@ -73,11 +73,11 @@ function TestimonialCard({
   return (
     <div className={cn(
       "w-72 shrink-0 rounded-xl border border-border bg-card p-6 shadow-sm",
-      "transition-all hover:shadow-lg hover:border-primary/20",
+      "transition-[shadow,border-color] hover:shadow-lg hover:border-primary/20",
     )}>
-      <div className="flex gap-0.5">
+      <div className="flex gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
         {Array.from({ length: rating }).map((_, j) => (
-          <Star key={j} className="size-4 fill-amber-400 text-amber-400" />
+          <Star key={j} className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
         ))}
       </div>
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
@@ -89,6 +89,7 @@ function TestimonialCard({
             "flex size-8 items-center justify-center rounded-full text-xs font-medium text-white",
             color,
           )}
+          aria-hidden="true"
         >
           {avatar}
         </div>
@@ -106,7 +107,7 @@ export function TestimonialsSection() {
   const secondRow = testimonials.slice(3, 6);
 
   return (
-    <section className="px-4 py-24 sm:px-6 lg:px-8">
+    <section className="bg-accent/30 px-4 py-20 sm:py-28 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         <ScrollReveal>
           <div className="text-center">

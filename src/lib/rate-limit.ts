@@ -96,17 +96,21 @@ function getClientIP(req: NextRequest): string {
  * Rate limiter for API routes
  * Uses Upstash Redis in production, falls back to in-memory for development
  *
+ * @param userId - Optional user ID for per-user rate limiting on authenticated endpoints.
+ *                 When provided, rate limiting keys on userId instead of IP.
+ *
  * @example
- * const rateLimitResult = await rateLimit(req, { interval: 60000, maxRequests: 10 });
+ * const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "checkout", userId);
  * if (rateLimitResult) return rateLimitResult; // Returns 429 response
  */
 export async function rateLimit(
   req: NextRequest,
   config: RateLimitConfig,
-  identifier: string = "default"
+  identifier: string = "default",
+  userId?: string
 ): Promise<NextResponse | null> {
   const ip = getClientIP(req);
-  const key = `${identifier}:${ip}`;
+  const key = userId ? `${identifier}:user:${userId}` : `${identifier}:${ip}`;
 
   // Try Redis first
   const limiter = getRateLimiter(config, identifier);

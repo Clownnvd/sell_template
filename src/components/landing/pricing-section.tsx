@@ -20,7 +20,7 @@ export function PricingSection() {
       <div className="mx-auto max-w-3xl">
         <ScrollReveal>
           <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
               Simple, one-time pricing
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
@@ -28,10 +28,16 @@ export function PricingSection() {
             </p>
 
             {/* Currency toggle */}
-            <div className="mt-6 inline-flex items-center rounded-full border border-border bg-muted/50 p-1">
+            <div
+              className="mt-6 inline-flex items-center rounded-full border border-border bg-muted/50 p-1"
+              role="radiogroup"
+              aria-label="Select currency"
+            >
               <button
                 onClick={() => setCurrency("usd")}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+                role="radio"
+                aria-checked={currency === "usd"}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                   currency === "usd"
                     ? "bg-gradient-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -41,7 +47,9 @@ export function PricingSection() {
               </button>
               <button
                 onClick={() => setCurrency("vnd")}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
+                role="radio"
+                aria-checked={currency === "vnd"}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                   currency === "vnd"
                     ? "bg-gradient-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -104,7 +112,7 @@ export function PricingSection() {
               {currency === "usd" ? (
                 <Link
                   href="/sign-up"
-                  className="shine-effect inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-all hover:shadow-lg sm:w-auto"
+                  className="shine-effect inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-shadow hover:shadow-lg sm:w-auto"
                 >
                   Get King Template — ${product.price}
                   <ArrowRight className="size-4" />
@@ -112,7 +120,7 @@ export function PricingSection() {
               ) : (
                 <Link
                   href="/sign-up"
-                  className="shine-effect inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-all hover:shadow-lg sm:w-auto"
+                  className="shine-effect inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-shadow hover:shadow-lg sm:w-auto"
                 >
                   Mua ngay — {formatVND(product.priceVND)} VND
                   <ArrowRight className="size-4" />

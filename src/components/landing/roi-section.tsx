@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, X, Clock, DollarSign } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
@@ -22,7 +20,7 @@ export function ROISection() {
       <div className="mx-auto max-w-4xl">
         <ScrollReveal>
           <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
               Build from scratch or{" "}
               <span className="text-gradient">save months</span>?
             </h2>
@@ -32,9 +30,47 @@ export function ROISection() {
           </div>
         </ScrollReveal>
 
-        {/* Comparison table */}
+        {/* Mobile cards (visible < sm) */}
         <ScrollReveal delay={200}>
-          <div className="mt-12 overflow-hidden rounded-2xl border border-border bg-card shadow-elevated">
+          <div className="mt-12 space-y-3 sm:hidden">
+            {COMPARISON_ROWS.map((row) => (
+              <div
+                key={row.feature}
+                className="rounded-xl border border-border bg-card p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-sm font-medium text-foreground">
+                    {row.feature}
+                  </span>
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="size-3" />
+                  <span>DIY: {row.diyHours}</span>
+                  <span className="text-muted-foreground/50">({row.diyLabel})</span>
+                </div>
+              </div>
+            ))}
+            <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-foreground">Total DIY cost</span>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-destructive">{TOTAL_DIY.hours}</div>
+                  <div className="text-xs text-destructive/70">{TOTAL_DIY.cost}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-gradient-primary py-2.5">
+                <DollarSign className="size-4 text-white" />
+                <span className="text-lg font-bold text-white">99</span>
+                <span className="ml-1 text-xs text-white/80">one-time</span>
+              </div>
+            </div>
+          </div>
+        </ScrollReveal>
+
+        {/* Desktop table (visible >= sm) */}
+        <ScrollReveal delay={200}>
+          <div className="mt-12 hidden overflow-hidden rounded-2xl border border-border bg-card shadow-elevated sm:block">
             {/* Header */}
             <div className="grid grid-cols-3 border-b border-border">
               <div className="p-4 sm:p-5">

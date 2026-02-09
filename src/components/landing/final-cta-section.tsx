@@ -1,12 +1,10 @@
-"use client";
-
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { DotPattern } from "@/components/ui/dot-pattern";
 
 export function FinalCTASection() {
   return (
-    <section className="px-4 py-24 sm:px-6 lg:px-8">
+    <section className="px-4 py-20 sm:py-28 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-primary px-8 py-16 text-center sm:px-16">
           <DotPattern
@@ -28,7 +26,7 @@ export function FinalCTASection() {
             <div className="mt-8">
               <Link
                 href="/sign-up"
-                className="shine-effect inline-flex items-center gap-2 rounded-lg bg-white px-8 py-3.5 text-sm font-medium text-primary shadow-sm transition-all hover:shadow-lg"
+                className="shine-effect inline-flex items-center gap-2 rounded-lg bg-white px-8 py-3.5 text-sm font-medium text-primary shadow-sm transition-shadow hover:shadow-lg"
               >
                 Buy King Template — $99
                 <ArrowRight className="size-4" />

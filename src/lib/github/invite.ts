@@ -15,18 +15,27 @@ export async function inviteCollaborator(
     throw new Error("GitHub integration not configured");
   }
 
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/collaborators/${githubUsername}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.v3+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-      body: JSON.stringify({ permission: "pull" }),
-    }
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/collaborators/${githubUsername}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github.v3+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({ permission: "pull" }),
+        signal: controller.signal,
+      }
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (response.status === 201) {
     return { success: true, alreadyCollaborator: false };

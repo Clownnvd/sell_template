@@ -1,20 +1,18 @@
 // prisma/seed.ts
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
 
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // Seed demo users (idempotent)
+  // Seed demo users (idempotent via upsert)
   const users = [
-    { email: "owner@local.test", name: "Owner" },
-    { email: "admin@local.test", name: "Admin" },
-    { email: "member@local.test", name: "Member" },
+    { email: "sarah.chen@example.com", name: "Sarah Chen" },
+    { email: "marcus.johnson@example.com", name: "Marcus Johnson" },
+    { email: "yuki.tanaka@example.com", name: "Yuki Tanaka" },
   ];
 
   const created = await Promise.all(
@@ -26,6 +24,28 @@ async function main() {
       })
     )
   );
+
+  // Seed a completed purchase for the first user (idempotent)
+  const buyer = created[0];
+  const existingPurchase = await prisma.purchase.findFirst({
+    where: { userId: buyer.id, productType: "KING_TEMPLATE" },
+  });
+
+  if (!existingPurchase) {
+    await prisma.purchase.create({
+      data: {
+        userId: buyer.id,
+        paymentMethod: "STRIPE",
+        productType: "KING_TEMPLATE",
+        amount: 9900,
+        currency: "USD",
+        status: "COMPLETED",
+        stripePaymentId: `pi_seed_${buyer.id.slice(0, 8)}`,
+        githubInviteSent: false,
+        purchasedAt: new Date(),
+      },
+    });
+  }
 
   console.log("Seed complete");
   console.log({

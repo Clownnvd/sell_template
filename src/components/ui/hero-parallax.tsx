@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   motion,
@@ -116,7 +117,7 @@ function Header({
 }) {
   return (
     <div className="relative left-0 top-0 mx-auto w-full max-w-7xl px-4 py-20 md:py-40">
-      <h2 className="text-2xl font-bold text-foreground md:text-7xl">
+      <h2 className="text-2xl font-bold text-foreground sm:text-4xl md:text-7xl">
         {heading ?? (
           <>
             The Ultimate <br /> development studio
@@ -147,11 +148,13 @@ function ProductCard({
     >
       <Link href={product.link} className="block group-hover/product:shadow-2xl">
         {product.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={product.thumbnail}
             className="absolute inset-0 h-full w-full rounded-lg object-cover object-top-left"
             alt={product.title}
+            width={800}
+            height={600}
+            loading="lazy"
           />
         ) : (
           <div

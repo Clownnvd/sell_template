@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Shield,
   CreditCard,
@@ -52,11 +50,11 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="px-4 py-24 sm:px-6 lg:px-8">
+    <section id="features" className="bg-accent/30 px-4 py-20 sm:py-28 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         <ScrollReveal>
           <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
               Everything you need to{" "}
               <span className="text-gradient">ship</span>
             </h2>

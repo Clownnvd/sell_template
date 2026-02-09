@@ -41,7 +41,7 @@ export function verifyCsrf(req: NextRequest): NextResponse | null {
   if (origin) {
     if (origin !== expectedOrigin) {
       return NextResponse.json(
-        { success: false, error: "Invalid request origin" },
+        { success: false, error: "Invalid request origin", code: "FORBIDDEN" },
         { status: 403 }
       );
     }
@@ -68,7 +68,7 @@ export function verifyCsrf(req: NextRequest): NextResponse | null {
   // Reject requests without Origin or Referer
   // Browsers always send Origin on same-origin fetch() and form POST
   return NextResponse.json(
-    { success: false, error: "Missing request origin" },
+    { success: false, error: "Missing request origin", code: "FORBIDDEN" },
     { status: 403 }
   );
 }

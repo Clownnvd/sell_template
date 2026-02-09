@@ -34,7 +34,7 @@ export function LandingHeaderClient({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
+        "sticky top-0 z-50 w-full transition-[background-color,border-color,box-shadow] duration-300",
         scrolled
           ? "border-b border-border bg-background/90 shadow-sm backdrop-blur-xl"
           : "bg-transparent"
@@ -80,7 +80,7 @@ export function LandingHeaderClient({
               </Button>
               <Link
                 href="/sign-up"
-                className="shine-effect inline-flex items-center gap-1.5 rounded-lg bg-gradient-primary px-4 py-2 text-sm font-medium text-white transition-all hover:shadow-lg"
+                className="shine-effect inline-flex items-center gap-1.5 rounded-lg bg-gradient-primary px-4 py-2 text-sm font-medium text-white transition-shadow hover:shadow-lg"
               >
                 Buy Now — $99
                 <ArrowRight className="size-3.5" />
@@ -108,7 +108,7 @@ export function LandingHeaderClient({
       {/* Mobile menu */}
       <div
         className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out md:hidden",
+          "overflow-hidden transition-[max-height,border-color] duration-300 ease-in-out md:hidden",
           open ? "max-h-96 border-t border-border" : "max-h-0"
         )}
       >
@@ -137,7 +137,7 @@ export function LandingHeaderClient({
               <Link
                 href="/sign-up"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-3 text-sm font-medium text-white transition-all hover:shadow-lg"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-3 text-sm font-medium text-white transition-shadow hover:shadow-lg"
               >
                 Buy Now — $99
                 <ArrowRight className="size-4" />

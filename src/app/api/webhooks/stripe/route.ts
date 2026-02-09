@@ -29,6 +29,13 @@ async function markEventProcessed(eventId: string, eventType: string): Promise<v
   });
 }
 
+/**
+ * POST /api/webhooks/stripe
+ * Handles Stripe webhook events (checkout.session.completed).
+ * Verifies signature, creates purchase record, triggers GitHub invite.
+ * @auth Stripe signature verification
+ * @rateLimit 100/min
+ */
 export async function POST(req: NextRequest) {
   const rateLimitResult = await rateLimit(req, rateLimitPresets.webhook, "stripe-webhook");
   if (rateLimitResult) return rateLimitResult;
@@ -128,6 +135,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       productType: "KING_TEMPLATE",
       amount,
       status: "COMPLETED",
+      purchasedAt: new Date(),
     },
   });
 

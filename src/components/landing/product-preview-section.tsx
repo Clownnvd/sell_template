@@ -38,29 +38,37 @@ export function ProductPreviewSection() {
             </p>
 
             {/* Light/Dark toggle */}
-            <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-border bg-card p-1">
+            <div
+              className="mt-6 inline-flex items-center gap-1 rounded-full border border-border bg-card p-1"
+              role="radiogroup"
+              aria-label="Preview theme"
+            >
               <button
                 type="button"
+                role="radio"
+                aria-checked={!darkPreview}
                 onClick={() => setDarkPreview(false)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                   !darkPreview
                     ? "bg-gradient-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Sun className="size-3.5" />
+                <Sun className="size-3.5" aria-hidden="true" />
                 Light
               </button>
               <button
                 type="button"
+                role="radio"
+                aria-checked={darkPreview}
                 onClick={() => setDarkPreview(true)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                   darkPreview
                     ? "bg-gradient-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Moon className="size-3.5" />
+                <Moon className="size-3.5" aria-hidden="true" />
                 Dark
               </button>
             </div>
@@ -90,7 +98,7 @@ export function ProductPreviewSection() {
 
                   {/* Preview area */}
                   <div
-                    className={`flex aspect-4/3 flex-col items-center justify-center rounded-lg bg-linear-to-br transition-all duration-500 ${
+                    className={`flex aspect-4/3 flex-col items-center justify-center rounded-lg bg-linear-to-br transition-colors duration-500 ${
                       darkPreview ? screen.darkBg : screen.lightBg
                     }`}
                   >

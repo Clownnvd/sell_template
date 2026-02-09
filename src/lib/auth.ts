@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import prisma from "@/lib/db";
 import { sendReactEmail } from "@/lib/email/resend";
+import { logAuthEvent } from "@/lib/auth/audit-log";
 
 import { ResetPasswordTemplate } from "@/lib/email/templates/reset-password";
 import { VerifyEmailTemplate } from "@/lib/email/templates/verify-email";
@@ -65,6 +66,26 @@ export const auth = betterAuth({
     accountLinking: {
       enabled: true,
       trustedProviders: ["google", "github"],
+    },
+  },
+
+  // Audit logging for auth events (security observability)
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          logAuthEvent("sign_up", user.id);
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session) => {
+          logAuthEvent("sign_in", session.userId, {
+            ip: session.ipAddress ?? undefined,
+          });
+        },
+      },
     },
   },
 });

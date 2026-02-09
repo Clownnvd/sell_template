@@ -14,7 +14,7 @@ export interface PurchaseData {
   amount: number;
   githubInviteSent: boolean;
   githubUsername: string | null;
-  purchasedAt: string;
+  purchasedAt: string | null;
 }
 
 interface PurchaseResponse {

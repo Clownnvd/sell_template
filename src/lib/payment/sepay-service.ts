@@ -85,7 +85,7 @@ export async function createSepayPurchase(userId: string): Promise<{
   await prisma.purchase.updateMany({
     where: {
       userId,
-      paymentMethod: "sepay",
+      paymentMethod: "SEPAY",
       status: "PENDING",
     },
     data: { status: "REFUNDED" },
@@ -98,7 +98,7 @@ export async function createSepayPurchase(userId: string): Promise<{
   const purchase = await prisma.purchase.create({
     data: {
       userId,
-      paymentMethod: "sepay",
+      paymentMethod: "SEPAY",
       paymentCode,
       productType: "KING_TEMPLATE",
       amount,
@@ -221,7 +221,7 @@ export async function getSepayPurchaseStatus(purchaseId: string) {
     },
   });
 
-  if (!purchase || purchase.paymentMethod !== "sepay") {
+  if (!purchase || purchase.paymentMethod !== "SEPAY") {
     return null;
   }
 

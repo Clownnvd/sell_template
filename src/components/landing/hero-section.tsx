@@ -61,7 +61,7 @@ export function HeroSection() {
         >
           <Link
             href="/sign-up"
-            className="shine-effect inline-flex items-center gap-2 rounded-lg bg-gradient-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-all hover:shadow-lg"
+            className="shine-effect inline-flex items-center gap-2 rounded-lg bg-gradient-primary px-6 py-3 text-sm font-medium text-white shadow-sm transition-shadow hover:shadow-lg"
           >
             Buy Now — $99
             <ArrowRight className="size-4" />
@@ -80,18 +80,19 @@ export function HeroSection() {
           style={{ animationDelay: "0.5s", animationFillMode: "both" }}
         >
           <div className="flex items-center">
-            <div className="flex -space-x-2">
+            <div className="flex -space-x-2" role="img" aria-label="Developer avatars">
               {avatars.map((a) => (
                 <div
                   key={a.initials}
                   className={`flex size-8 items-center justify-center rounded-full border-2 border-background text-xs font-medium text-white ${a.color}`}
+                  aria-hidden="true"
                 >
                   {a.initials}
                 </div>
               ))}
             </div>
             <span className="ml-3 text-sm text-muted-foreground">
-              Trusted by <span className="font-semibold text-foreground">100+</span> developers
+              Trusted by <span className="font-semibold text-foreground">127</span> developers
             </span>
           </div>
         </div>

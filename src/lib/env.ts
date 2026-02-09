@@ -21,10 +21,15 @@ function formatZodError(prefix: string, err: z.ZodError) {
 }
 
 const ServerEnvSchema = z.object({
-  // Database
+  // Database — pooled connection (queries)
   DATABASE_URL: z
     .string()
     .min(1, "DATABASE_URL is required (e.g. postgres://...)"),
+  // Database — direct connection (migrations), optional for dev
+  DIRECT_URL: z
+    .string()
+    .min(1, "DIRECT_URL is required for migrations")
+    .optional(),
 
   // Authentication
   BETTER_AUTH_SECRET: z
@@ -88,6 +93,7 @@ export const serverEnv = (() => {
 
   const parsed = ServerEnvSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
+    DIRECT_URL: process.env.DIRECT_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
