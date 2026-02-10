@@ -95,7 +95,7 @@ describe("PATCH /api/user/github-username", () => {
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.user.update.mockResolvedValue({ id: "user_1", githubUsername: "validuser" });
-    prismaMock.purchase.findFirst.mockResolvedValue({
+    prismaMock.purchase.findUnique.mockResolvedValue({
       id: "purchase_1",
       status: "COMPLETED",
       githubInviteSent: false,

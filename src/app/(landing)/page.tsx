@@ -1,14 +1,29 @@
+import dynamic from "next/dynamic";
 import { HeroSection } from "@/components/landing/hero-section";
 import { LogosSection } from "@/components/landing/logos-section";
 import { HeroParallaxSection } from "@/components/landing/hero-parallax-section";
 import { FeaturesSection } from "@/components/landing/features-section";
 import { ROISection } from "@/components/landing/roi-section";
-import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
-import { PricingSection } from "@/components/landing/pricing-section";
-import { FAQSection } from "@/components/landing/faq-section";
 import { FinalCTASection } from "@/components/landing/final-cta-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
+
+// Below-fold client sections — lazy loaded for bundle splitting
+const HowItWorksSection = dynamic(() =>
+  import("@/components/landing/how-it-works-section").then((m) => ({
+    default: m.HowItWorksSection,
+  }))
+);
+const PricingSection = dynamic(() =>
+  import("@/components/landing/pricing-section").then((m) => ({
+    default: m.PricingSection,
+  }))
+);
+const FAQSection = dynamic(() =>
+  import("@/components/landing/faq-section").then((m) => ({
+    default: m.FAQSection,
+  }))
+);
 
 export default function HomePage() {
   return (

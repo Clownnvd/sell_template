@@ -50,7 +50,7 @@ describe("GET /api/user/purchase", () => {
     mockGetSession.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
-    prismaMock.purchase.findFirst.mockResolvedValue({
+    prismaMock.purchase.findUnique.mockResolvedValue({
       id: "purchase_1",
       status: "COMPLETED",
       productType: "KING_TEMPLATE",
@@ -76,7 +76,7 @@ describe("GET /api/user/purchase", () => {
     mockGetSession.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
-    prismaMock.purchase.findFirst.mockResolvedValue(null);
+    prismaMock.purchase.findUnique.mockResolvedValue(null);
 
     const { GET } = await import("../route");
     const req = new NextRequest("http://localhost/api/user/purchase");

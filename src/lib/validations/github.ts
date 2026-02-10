@@ -11,4 +11,4 @@ export const githubUsernameSchema = z
 
 export const updateGithubUsernameSchema = z.object({
   githubUsername: githubUsernameSchema,
-});
+}).strict();

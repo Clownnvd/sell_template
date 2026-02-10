@@ -27,8 +27,10 @@ export async function GET(req: NextRequest) {
   const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "purchase-get", userId);
   if (rateLimitResult) return rateLimitResult;
 
-  const purchase = await prisma.purchase.findFirst({
-    where: { userId, status: "COMPLETED" },
+  const purchase = await prisma.purchase.findUnique({
+    where: {
+      one_purchase_per_product: { userId, productType: "KING_TEMPLATE" },
+    },
     select: {
       id: true,
       status: true,
@@ -40,13 +42,15 @@ export async function GET(req: NextRequest) {
     },
   });
 
+  const completedPurchase = purchase?.status === "COMPLETED" ? purchase : null;
+
   logRequest(req, 200, start, userId);
   return successResponse({
-    purchased: !!purchase,
-    purchase: purchase
+    purchased: !!completedPurchase,
+    purchase: completedPurchase
       ? {
-          ...purchase,
-          purchasedAt: purchase.purchasedAt?.toISOString() ?? null,
+          ...completedPurchase,
+          purchasedAt: completedPurchase.purchasedAt?.toISOString() ?? null,
         }
       : null,
   }, 200, NO_CACHE_HEADERS);

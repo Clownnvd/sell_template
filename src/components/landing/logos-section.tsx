@@ -1,5 +1,3 @@
-"use client";
-
 import { Marquee } from "@/components/ui/marquee";
 
 function NextjsLogo({ className }: { className?: string }) {

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePathWithLog } from "@/lib/cache-utils";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
@@ -68,12 +69,15 @@ export async function PATCH(req: NextRequest) {
       data: { githubUsername },
     });
 
-    const purchase = await prisma.purchase.findFirst({
-      where: { userId, status: "COMPLETED", githubInviteSent: false },
+    const purchase = await prisma.purchase.findUnique({
+      where: {
+        one_purchase_per_product: { userId, productType: "KING_TEMPLATE" },
+      },
+      select: { id: true, status: true, githubInviteSent: true },
     });
 
     let inviteResult = null;
-    if (purchase) {
+    if (purchase && purchase.status === "COMPLETED" && !purchase.githubInviteSent) {
       try {
         const result = await inviteCollaborator(githubUsername);
         if (result.success) {
@@ -89,6 +93,8 @@ export async function PATCH(req: NextRequest) {
         inviteResult = { sent: false, error: "Failed to send invite" };
       }
     }
+
+    revalidatePathWithLog("/dashboard", "github-username:update");
 
     logRequest(req, 200, start, userId);
     return successResponse({ githubUsername, invite: inviteResult }, 200, NO_CACHE_HEADERS);

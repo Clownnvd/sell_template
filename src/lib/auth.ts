@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { twoFactor } from "better-auth/plugins";
 
 import prisma from "@/lib/db";
 import { sendReactEmail } from "@/lib/email/resend";
@@ -13,8 +14,27 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
+  // Session configuration
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // Refresh token daily
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 min cache
+    },
+  },
+
+  // Cookie security
+  advanced: {
+    cookiePrefix: "king",
+    useSecureCookies: process.env.NODE_ENV === "production",
+    defaultCookieSameSite: "lax" as const,
+  },
+
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
     requireEmailVerification: Boolean(process.env.RESEND_API_KEY),
 
     sendResetPassword: async ({ user, url }) => {
@@ -46,22 +66,19 @@ export const auth = betterAuth({
     },
   },
 
-  // OAuth providers - configured via environment variables
-  // Set GOOGLE_CLIENT_ID/SECRET and GITHUB_CLIENT_ID/SECRET to enable
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || "disabled",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "disabled",
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       enabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID || "disabled",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || "disabled",
+      clientId: process.env.GITHUB_CLIENT_ID ?? "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
       enabled: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
     },
   },
 
-  // Account linking - allow users to link multiple OAuth accounts
   account: {
     accountLinking: {
       enabled: true,
@@ -69,7 +86,14 @@ export const auth = betterAuth({
     },
   },
 
-  // Audit logging for auth events (security observability)
+  // Plugins
+  plugins: [
+    twoFactor({
+      issuer: "King Template",
+    }),
+  ],
+
+  // Audit logging for auth events
   databaseHooks: {
     user: {
       create: {
@@ -83,6 +107,15 @@ export const auth = betterAuth({
         after: async (session) => {
           logAuthEvent("sign_in", session.userId, {
             ip: session.ipAddress ?? undefined,
+          });
+        },
+      },
+    },
+    account: {
+      create: {
+        after: async (account) => {
+          logAuthEvent("oauth_link", account.userId, {
+            provider: account.providerId,
           });
         },
       },

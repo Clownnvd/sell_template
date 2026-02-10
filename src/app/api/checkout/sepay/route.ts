@@ -13,8 +13,12 @@ import {
   notFoundError,
   serverError,
   ErrorCodes,
+  NO_CACHE_HEADERS,
 } from "@/lib/api/response";
 import { logRequest } from "@/lib/api/logger";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/checkout/sepay
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
       bankAccount: result.bankAccount,
       bankCode: result.bankCode,
       expiresAt: result.expiresAt.toISOString(),
-    });
+    }, 200, NO_CACHE_HEADERS);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Unauthorized")) {
@@ -89,7 +93,7 @@ export async function GET(req: NextRequest) {
     }
 
     logRequest(req, 200, getStart);
-    return successResponse(status);
+    return successResponse(status, 200, NO_CACHE_HEADERS);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, getStart);

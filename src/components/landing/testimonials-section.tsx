@@ -1,5 +1,3 @@
-"use client";
-
 import { Star } from "lucide-react";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Marquee } from "@/components/ui/marquee";

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePathWithLog } from "@/lib/cache-utils";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { verifySepayWebhook, processSepayTransaction } from "@/lib/payment/sepay-service";
 import prisma from "@/lib/db";
+import { logger } from "@/lib/api/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,8 +92,14 @@ export async function POST(req: NextRequest) {
     });
 
     await markEventProcessed(eventId);
+    revalidatePathWithLog("/dashboard", "sepay-webhook:transaction-completed");
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (error) {
+    logger.error("sepay_webhook_processing_failed", {
+      eventId,
+      transactionId: transaction.id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }

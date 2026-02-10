@@ -23,31 +23,50 @@ function getAllowedOrigin(requestOrigin: string | null): string | null {
   }
 }
 
-// Security headers to apply to all responses
-const securityHeaders = {
+// Security headers applied to ALL responses
+const securityHeaders: Record<string, string> = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-XSS-Protection": "1; mode=block",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://www.youtube.com;",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://www.youtube.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;",
 };
+
+// HSTS only in production (avoid locking localhost to HTTPS)
+if (process.env.NODE_ENV === "production") {
+  securityHeaders["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
+}
 
 function isRouteMatch(pathname: string, basePath: string) {
   return pathname === basePath || pathname.startsWith(`${basePath}/`);
 }
 
 function isAuthenticatedByCookies(req: NextRequest) {
-  // BetterAuth uses "better-auth.session_token" as the session cookie
-  const sessionToken = req.cookies.get("better-auth.session_token");
+  // Cookie name depends on prefix config in auth.ts
+  // With cookiePrefix: "king", the cookie is "king.session_token"
+  // Falls back to default "better-auth.session_token" if prefix not set
+  const sessionToken =
+    req.cookies.get("king.session_token") ??
+    req.cookies.get("better-auth.session_token");
 
-  // Check if session token exists and has a valid value
   if (sessionToken?.value && sessionToken.value.length > 20) {
     return true;
   }
 
   return false;
+}
+
+function isValidCallbackUrl(url: string): boolean {
+  // Block open redirect attacks
+  if (url.startsWith("//") || url.startsWith("/\\")) return false;
+  if (!url.startsWith("/")) return false;
+  try {
+    new URL(url, "http://localhost");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function middleware(request: NextRequest) {
@@ -77,7 +96,9 @@ export function middleware(request: NextRequest) {
   if (isProtectedRoute && !isAuthenticated) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/sign-in";
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    if (isValidCallbackUrl(pathname)) {
+      loginUrl.searchParams.set("callbackUrl", pathname);
+    }
     const response = NextResponse.redirect(loginUrl);
     response.headers.set("X-Request-Id", requestId);
     applySecurityHeaders(response);

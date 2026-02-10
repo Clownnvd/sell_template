@@ -1,21 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { serverEnv } from "@/lib/env";
 
 describe("GitHub Invite Service", () => {
-  const originalEnv = process.env;
-
   beforeEach(() => {
     vi.resetModules();
-    process.env = {
-      ...originalEnv,
-      GITHUB_PAT: "ghp_test_token_123",
-      GITHUB_REPO_OWNER: "Clownnvd",
-      GITHUB_REPO_NAME: "king-template",
-    };
     global.fetch = vi.fn();
   });
 
   afterEach(() => {
-    process.env = originalEnv;
     vi.restoreAllMocks();
   });
 
@@ -31,11 +23,11 @@ describe("GitHub Invite Service", () => {
     expect(result.success).toBe(true);
     expect(result.alreadyCollaborator).toBe(false);
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://api.github.com/repos/Clownnvd/king-template/collaborators/testuser",
+      `https://api.github.com/repos/${serverEnv.GITHUB_REPO_OWNER}/${serverEnv.GITHUB_REPO_NAME}/collaborators/testuser`,
       expect.objectContaining({
         method: "PUT",
         headers: expect.objectContaining({
-          Authorization: "Bearer ghp_test_token_123",
+          Authorization: `Bearer ${serverEnv.GITHUB_PAT}`,
         }),
       })
     );
@@ -69,7 +61,14 @@ describe("GitHub Invite Service", () => {
   });
 
   it("throws when GitHub integration is not configured", async () => {
-    process.env.GITHUB_PAT = "";
+    // Override serverEnv mock for this test to simulate missing config
+    vi.doMock("@/lib/env", () => ({
+      serverEnv: {
+        GITHUB_PAT: undefined,
+        GITHUB_REPO_OWNER: undefined,
+        GITHUB_REPO_NAME: undefined,
+      },
+    }));
 
     const { inviteCollaborator } = await import("../invite");
     await expect(inviteCollaborator("testuser")).rejects.toThrow(

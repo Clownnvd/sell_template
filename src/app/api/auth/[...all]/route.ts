@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const { POST: authPost, GET: authGet } = toNextJsHandler(auth);
 
 export async function POST(req: NextRequest) {

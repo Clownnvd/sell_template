@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { logger } from "@/lib/api/logger";
 
 interface RateLimitConfig {
   interval: number; // Time window in milliseconds
@@ -120,6 +121,14 @@ export async function rateLimit(
       const { success, limit, remaining, reset } = await limiter.limit(key);
 
       if (!success) {
+        logger.warn("rate_limit_exceeded", {
+          ip,
+          path: req.nextUrl.pathname,
+          identifier,
+          userId,
+          limit,
+          remaining,
+        });
         const retryAfter = Math.ceil((reset - Date.now()) / 1000);
         return NextResponse.json(
           {
@@ -158,6 +167,13 @@ export async function rateLimit(
   }
 
   if (entry.count >= config.maxRequests) {
+    logger.warn("rate_limit_exceeded", {
+      ip,
+      path: req.nextUrl.pathname,
+      identifier,
+      userId,
+      limit: config.maxRequests,
+    });
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
     return NextResponse.json(
       {

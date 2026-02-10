@@ -2,62 +2,65 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
-import { usePurchase } from "@/hooks/use-purchase";
+import { useCheckout } from "@/hooks/use-checkout";
+import type { PurchaseData } from "@/hooks/use-purchase";
 
 import { Check, Copy, ExternalLink, Loader2, X, ArrowRight, QrCode } from "lucide-react";
 import { githubUsernameSchema } from "@/lib/validations/github";
 import { DashboardHeader } from "./header";
-
-type SessionUser = {
-  email?: string | null;
-  name?: string | null;
-};
-
-type SessionData = {
-  user?: SessionUser | null;
-} | null;
 
 const REPO_OWNER = process.env.NEXT_PUBLIC_GITHUB_REPO_OWNER || "your-org";
 const REPO_NAME = process.env.NEXT_PUBLIC_GITHUB_REPO_NAME || "king-template";
 const REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
 const CLONE_CMD = `git clone ${REPO_URL}.git`;
 
-export function DashboardPage() {
-  const { data } = useSession();
-  const session = data as SessionData;
-  const { purchase, hasPurchased, isLoadingPurchase, fetchError, createCheckout } = usePurchase();
+interface DashboardPageProps {
+  userName: string | null;
+  initialPurchase: PurchaseData | null;
+}
+
+export function DashboardPage({ userName, initialPurchase }: DashboardPageProps) {
+  const { createCheckout, isLoading: isCheckingOut, error: checkoutError } = useCheckout();
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const [purchase, setPurchase] = useState<PurchaseData | null>(initialPurchase);
   const [billingBanner, setBillingBanner] = useState<"success" | "canceled" | null>(null);
-  const [githubUsername, setGithubUsername] = useState("");
+  const [githubUsername, setGithubUsername] = useState(initialPurchase?.githubUsername ?? "");
   const [isSavingUsername, setIsSavingUsername] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSaved, setUsernameSaved] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const hasPurchased = purchase?.status === "COMPLETED";
   const billingParam = searchParams.get("billing");
 
+  // After successful payment redirect, refetch purchase data
   useEffect(() => {
     if (billingParam === "success" || billingParam === "canceled") {
       setBillingBanner(billingParam);
       window.history.replaceState({}, "", "/dashboard");
     }
-  }, [billingParam]);
 
-  useEffect(() => {
-    if (purchase?.githubUsername) {
-      setGithubUsername(purchase.githubUsername);
+    if (billingParam === "success" && !hasPurchased) {
+      // Purchase was just completed — refetch from API to get latest data
+      fetch("/api/user/purchase")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data?.purchase) {
+            setPurchase(data.data.purchase);
+          }
+        })
+        .catch(() => {
+          // Non-critical — page will show stale data until refresh
+        });
     }
-  }, [purchase?.githubUsername]);
+  }, [billingParam, hasPurchased]);
 
-  const userName = useMemo(() => {
-    const name = session?.user?.name;
-    if (!name) return "there";
-    return name.split(" ")[0];
-  }, [session]);
+  const displayName = useMemo(() => {
+    if (!userName) return "there";
+    return userName.split(" ")[0];
+  }, [userName]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -67,12 +70,7 @@ export function DashboardPage() {
   }, []);
 
   const handleBuyNow = useCallback(async () => {
-    setIsCheckingOut(true);
-    try {
-      await createCheckout("/dashboard?billing=success", "/dashboard?billing=canceled");
-    } catch {
-      setIsCheckingOut(false);
-    }
+    await createCheckout("/dashboard?billing=success", "/dashboard?billing=canceled");
   }, [createCheckout]);
 
   const handleSaveGithubUsername = useCallback(async () => {
@@ -118,17 +116,6 @@ export function DashboardPage() {
     setTimeout(() => setCopied(false), 2000);
   }, []);
 
-  if (isLoadingPurchase) {
-    return (
-      <div className="min-h-screen">
-        <DashboardHeader title="Dashboard" />
-        <div className="flex items-center justify-center p-20">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen">
       <DashboardHeader title="Dashboard" />
@@ -152,17 +139,17 @@ export function DashboardPage() {
           </div>
         )}
 
-        {/* Fetch error */}
-        {fetchError && (
+        {/* Checkout error */}
+        {checkoutError && (
           <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-            <p className="font-medium">{fetchError}</p>
+            <p className="font-medium">{checkoutError}</p>
           </div>
         )}
 
         {/* Welcome */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">
-            {greeting}, {userName}!
+            {greeting}, {displayName}!
           </h1>
           <p className="mt-1 text-muted-foreground">
             {hasPurchased

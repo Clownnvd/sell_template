@@ -3,10 +3,11 @@ import { z } from "zod";
 export const strongPasswordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-    "Password must contain at least one uppercase letter, one lowercase letter, and one number"
-  );
+  .max(128, "Password must be at most 128 characters")
+  .regex(/[a-z]/, "Must contain a lowercase letter")
+  .regex(/[A-Z]/, "Must contain an uppercase letter")
+  .regex(/[0-9]/, "Must contain a number")
+  .regex(/[^a-zA-Z0-9]/, "Must contain a special character");
 
 /* =========================
  * SIGN IN
@@ -15,7 +16,7 @@ export const strongPasswordSchema = z
 export const signInSchema = z.object({
   email: z.string().email("Email is invalid"),
   password: z.string().min(1, "Password is required"),
-});
+}).strict();
 
 export type SignInInput = z.infer<typeof signInSchema>;
 
@@ -30,6 +31,7 @@ export const signUpSchema = z
     password: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Confirm password is required"),
   })
+  .strict()
   .refine((v) => v.password === v.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
@@ -43,7 +45,7 @@ export type SignUpInput = z.infer<typeof signUpSchema>;
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Email is invalid"),
-});
+}).strict();
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
@@ -56,6 +58,7 @@ export const resetPasswordSchema = z
     newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Confirm password is required"),
   })
+  .strict()
   .refine((v) => v.newPassword === v.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
@@ -69,6 +72,6 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const resendVerificationSchema = z.object({
   email: z.string().email("Email is invalid"),
-});
+}).strict();
 
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;

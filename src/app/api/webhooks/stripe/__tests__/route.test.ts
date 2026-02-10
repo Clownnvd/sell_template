@@ -16,12 +16,13 @@ vi.mock("@/lib/github/invite", () => ({
   inviteCollaborator: vi.fn().mockResolvedValue({ success: true, alreadyCollaborator: false }),
 }));
 
-const WEBHOOK_SECRET = "whsec_test_secret";
+function recentTimestamp(): number {
+  return Math.floor(Date.now() / 1000);
+}
 
 describe("POST /api/webhooks/stripe", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET;
   });
 
   it("returns 400 when stripe-signature header is missing", async () => {
@@ -53,6 +54,7 @@ describe("POST /api/webhooks/stripe", () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       id: "evt_already_processed",
       type: "checkout.session.completed",
+      created: recentTimestamp(),
       data: { object: {} },
     });
     prismaMock.webhookEvent.findUnique.mockResolvedValue({ id: "evt_already_processed" });
@@ -82,6 +84,7 @@ describe("POST /api/webhooks/stripe", () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       id: "evt_new",
       type: "checkout.session.completed",
+      created: recentTimestamp(),
       data: { object: mockSession },
     });
 
@@ -119,8 +122,13 @@ describe("POST /api/webhooks/stripe", () => {
     );
   });
 
-  it("returns 500 when webhook secret is not configured", async () => {
-    process.env.STRIPE_WEBHOOK_SECRET = "";
+  it("returns 400 when event is too old (replay protection)", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      id: "evt_old",
+      type: "checkout.session.completed",
+      created: Math.floor(Date.now() / 1000) - 600,
+      data: { object: {} },
+    });
 
     const { POST } = await import("../route");
     const req = new NextRequest("http://localhost/api/webhooks/stripe", {
@@ -129,6 +137,6 @@ describe("POST /api/webhooks/stripe", () => {
       body: "{}",
     });
     const response = await POST(req);
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(400);
   });
 });

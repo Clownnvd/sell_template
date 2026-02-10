@@ -6,7 +6,7 @@ export const updateEmailSchema = z.object({
     .string()
     .email("Invalid email address")
     .min(1, "Email is required"),
-});
+}).strict();
 
 export const changePasswordSchema = z
   .object({
@@ -16,6 +16,7 @@ export const changePasswordSchema = z
     newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
+  .strict()
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
@@ -27,13 +28,13 @@ export const notificationPreferencesSchema = z.object({
     updates: z.boolean(),
     invitations: z.boolean(),
     reminders: z.boolean(),
-  }),
+  }).strict(),
   pushNotifications: z.object({
     enabled: z.boolean(),
     mentions: z.boolean(),
     messages: z.boolean(),
-  }),
-});
+  }).strict(),
+}).strict();
 
 export type UpdateEmailInput = z.infer<typeof updateEmailSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

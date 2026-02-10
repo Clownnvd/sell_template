@@ -21,6 +21,6 @@ const safeUrlSchema = z.string().refine(
 export const createCheckoutSchema = z.object({
   successUrl: safeUrlSchema.optional(),
   cancelUrl: safeUrlSchema.optional(),
-});
+}).strict();
 
 export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;

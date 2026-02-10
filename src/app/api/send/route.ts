@@ -8,10 +8,25 @@ import {
   successResponse,
   unauthorizedError,
   serverError,
+  NO_CACHE_HEADERS,
 } from "@/lib/api/response";
 import { logRequest } from "@/lib/api/logger";
+import { serverEnv } from "@/lib/env";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const resend = new Resend(serverEnv.RESEND_API_KEY);
+const SEND_TIMEOUT_MS = 10_000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
 
 /**
  * POST /api/send
@@ -38,12 +53,15 @@ export async function POST(req: NextRequest) {
   const userName = session.user.name?.split(" ")[0] || "there";
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: `King Template <${process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"}>`,
-      to: [userEmail],
-      subject: "Welcome to King Template",
-      react: WelcomeEmail({ firstName: userName }),
-    });
+    const { data, error } = await withTimeout(
+      resend.emails.send({
+        from: `King Template <${serverEnv.RESEND_FROM || "onboarding@resend.dev"}>`,
+        to: [userEmail],
+        subject: "Welcome to King Template",
+        react: WelcomeEmail({ firstName: userName }),
+      }),
+      SEND_TIMEOUT_MS
+    );
 
     if (error) {
       logRequest(req, 500, start, session.user.id);
@@ -51,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     logRequest(req, 200, start, session.user.id);
-    return successResponse(data);
+    return successResponse(data, 200, NO_CACHE_HEADERS);
   } catch {
     logRequest(req, 500, start, session.user.id);
     return serverError("Failed to send email");

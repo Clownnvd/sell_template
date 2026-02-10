@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePathWithLog } from "@/lib/cache-utils";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
@@ -117,6 +118,8 @@ export async function PATCH(req: NextRequest) {
         createdAt: true,
       },
     });
+
+    revalidatePathWithLog("/dashboard/settings/profile", "profile-api:update");
 
     logRequest(req, 200, patchStart, userId);
     return successResponse({

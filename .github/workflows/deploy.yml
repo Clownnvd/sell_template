@@ -1,0 +1,49 @@
+name: Deploy
+
+on:
+  deployment_status:
+
+jobs:
+  smoke-test:
+    name: Post-Deploy Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.deployment_status.state == 'success'
+    steps:
+      - name: Wait for deployment to stabilize
+        run: sleep 15
+
+      - name: Health check
+        run: |
+          DEPLOY_URL="${{ github.event.deployment_status.target_url }}"
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "No deployment URL found, skipping smoke test"
+            exit 0
+          fi
+
+          echo "Testing deployment: $DEPLOY_URL"
+
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$DEPLOY_URL/api/health")
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "Health check failed after 5 attempts"
+          exit 1
+
+  notify-failure:
+    name: Notify Deploy Failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.deployment_status.state == 'failure'
+    steps:
+      - name: Report failure
+        run: |
+          echo "::error::Deployment failed for ${{ github.event.deployment_status.target_url }}"
+          echo "Environment: ${{ github.event.deployment_status.environment }}"
+          echo "Commit: ${{ github.sha }}"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Menu, X, ArrowRight } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -12,14 +13,17 @@ import { cn } from "@/utils/cn";
 
 type NavItem = { label: string; href: string };
 
-export function LandingHeaderClient({
-  navItems,
-  isAuthed,
-}: {
-  navItems: NavItem[];
-  isAuthed: boolean;
-}) {
+const navItems: NavItem[] = [
+  { label: "Features", href: "/#features" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "FAQ", href: "/#faq" },
+];
+
+export function LandingHeaderClient() {
   const t = useTranslations("navigation");
+  const { data: session } = useSession();
+  const isAuthed = !!session?.user;
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 

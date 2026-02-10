@@ -2,10 +2,19 @@ type AuditEvent =
   | "sign_in"
   | "sign_up"
   | "sign_out"
+  | "login_failed"
+  | "password_changed"
   | "password_reset_request"
   | "password_reset_complete"
   | "email_verified"
-  | "oauth_link";
+  | "email_changed"
+  | "oauth_link"
+  | "oauth_unlink"
+  | "session_revoked"
+  | "2fa_enabled"
+  | "2fa_disabled"
+  | "purchase_completed"
+  | "github_invited";
 
 interface AuditEntry {
   level: "info" | "warn";
@@ -26,7 +35,7 @@ export function logAuthEvent(
   extra?: { provider?: string; ip?: string }
 ): void {
   const entry: AuditEntry = {
-    level: event === "password_reset_request" ? "warn" : "info",
+    level: ["password_reset_request", "login_failed", "session_revoked"].includes(event) ? "warn" : "info",
     event,
     userId,
     provider: extra?.provider,

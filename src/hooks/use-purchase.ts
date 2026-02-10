@@ -25,14 +25,14 @@ interface PurchaseResponse {
 export function usePurchase() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<PurchaseData | null>(null);
-  const [hasPurchased, setHasPurchased] = useState(false);
   const [isLoadingPurchase, setIsLoadingPurchase] = useState(true);
+
+  const hasPurchased = purchase?.status === "COMPLETED";
 
   const fetchPurchase = useCallback(async () => {
     setIsLoadingPurchase(true);
-    setFetchError(null);
+    setError(null);
     try {
       const response = await fetch("/api/user/purchase");
       if (response.status === 401) {
@@ -42,10 +42,9 @@ export function usePurchase() {
       const data: ApiResponse<PurchaseResponse> = await response.json();
       if (data.success && data.data) {
         setPurchase(data.data.purchase);
-        setHasPurchased(data.data.purchased);
       }
     } catch {
-      setFetchError("Failed to load purchase status");
+      setError("Failed to load purchase status");
     } finally {
       setIsLoadingPurchase(false);
     }
@@ -102,7 +101,6 @@ export function usePurchase() {
     purchase,
     hasPurchased,
     isLoadingPurchase,
-    fetchError,
     refetchPurchase: fetchPurchase,
     isLoading,
     error,

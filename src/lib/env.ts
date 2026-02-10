@@ -61,6 +61,7 @@ const ServerEnvSchema = z.object({
   RESEND_API_KEY: z
     .string()
     .optional(),
+  RESEND_FROM: z.string().optional(),
 
   // SePay (optional — Vietnamese payment gateway)
   SEPAY_API_KEY: z.string().optional(),
@@ -105,6 +106,7 @@ export const serverEnv = (() => {
     GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER,
     GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_FROM: process.env.RESEND_FROM,
     SEPAY_API_KEY: process.env.SEPAY_API_KEY,
     SEPAY_BANK_ACCOUNT: process.env.SEPAY_BANK_ACCOUNT,
     SEPAY_BANK_CODE: process.env.SEPAY_BANK_CODE,

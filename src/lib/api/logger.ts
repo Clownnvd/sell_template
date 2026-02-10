@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 
+type LogLevel = "info" | "warn" | "error";
+
 interface LogEntry {
-  level: "info" | "warn" | "error";
+  level: LogLevel;
   event: "api_request";
   method: string;
   path: string;
@@ -13,6 +15,45 @@ interface LogEntry {
   requestId: string | undefined;
   timestamp: string;
 }
+
+interface SecurityLogEntry {
+  level: LogLevel;
+  event: string;
+  timestamp: string;
+  [key: string]: unknown;
+}
+
+function writeLog(level: LogLevel, entry: Record<string, unknown>): void {
+  if (process.env.NODE_ENV === "production") {
+    const output = JSON.stringify(entry);
+    if (level === "error") {
+      console.error(output);
+    } else if (level === "warn") {
+      console.warn(output);
+    } else {
+      console.info(output);
+    }
+  } else {
+    const { event, level: _level, timestamp: _ts, ...rest } = entry;
+    console.info(`[${event}]`, rest);
+  }
+}
+
+/** Structured logger for security events, webhook processing, and general app logging */
+export const logger = {
+  info(event: string, meta?: Record<string, unknown>): void {
+    const entry: SecurityLogEntry = { level: "info", event, timestamp: new Date().toISOString(), ...meta };
+    writeLog("info", entry);
+  },
+  warn(event: string, meta?: Record<string, unknown>): void {
+    const entry: SecurityLogEntry = { level: "warn", event, timestamp: new Date().toISOString(), ...meta };
+    writeLog("warn", entry);
+  },
+  error(event: string, meta?: Record<string, unknown>): void {
+    const entry: SecurityLogEntry = { level: "error", event, timestamp: new Date().toISOString(), ...meta };
+    writeLog("error", entry);
+  },
+};
 
 /**
  * Log a completed API request with structured data.
@@ -41,17 +82,5 @@ export function logRequest(
     timestamp: new Date().toISOString(),
   };
 
-  if (process.env.NODE_ENV === "production") {
-    // Structured JSON for log aggregation (Datadog, Loki, CloudWatch, etc.)
-    if (entry.level === "error") {
-      console.error(JSON.stringify(entry));
-    } else if (entry.level === "warn") {
-      console.warn(JSON.stringify(entry));
-    } else {
-      console.info(JSON.stringify(entry));
-    }
-  } else {
-    const userSuffix = userId ? ` user=${userId}` : "";
-    console.info(`[${entry.method}] ${entry.path} ${entry.status} ${entry.durationMs}ms${userSuffix}`);
-  }
+  writeLog(entry.level, entry as unknown as Record<string, unknown>);
 }

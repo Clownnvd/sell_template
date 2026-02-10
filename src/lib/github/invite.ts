@@ -1,3 +1,5 @@
+import { serverEnv } from "@/lib/env";
+
 interface GitHubInviteResult {
   success: boolean;
   alreadyCollaborator: boolean;
@@ -7,9 +9,9 @@ interface GitHubInviteResult {
 export async function inviteCollaborator(
   githubUsername: string
 ): Promise<GitHubInviteResult> {
-  const token = process.env.GITHUB_PAT;
-  const owner = process.env.GITHUB_REPO_OWNER;
-  const repo = process.env.GITHUB_REPO_NAME;
+  const token = serverEnv.GITHUB_PAT;
+  const owner = serverEnv.GITHUB_REPO_OWNER;
+  const repo = serverEnv.GITHUB_REPO_NAME;
 
   if (!token || !owner || !repo) {
     throw new Error("GitHub integration not configured");

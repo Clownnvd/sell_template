@@ -12,8 +12,12 @@ import {
   serverError,
   requireJsonBody,
   ErrorCodes,
+  NO_CACHE_HEADERS,
 } from "@/lib/api/response";
 import { logRequest } from "@/lib/api/logger";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/stripe/checkout
@@ -60,9 +64,8 @@ export async function POST(req: NextRequest) {
       return serverError("Failed to create checkout session");
     }
 
-    const response = successResponse({ url: checkoutSession.url });
     logRequest(req, 200, start);
-    return response;
+    return successResponse({ url: checkoutSession.url }, 200, NO_CACHE_HEADERS);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Unauthorized")) {

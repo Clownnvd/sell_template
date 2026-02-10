@@ -154,6 +154,7 @@ function ProductCard({
             alt={product.title}
             width={800}
             height={600}
+            sizes="(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 30rem"
             loading="lazy"
           />
         ) : (

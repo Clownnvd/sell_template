@@ -12,7 +12,8 @@
     "format": "prettier . --write",
     "test": "vitest",
     "test:run": "vitest run",
-    "verify": "tsx scripts/verify.ts"
+    "verify": "tsx scripts/verify.ts",
+    "lighthouse": "npx lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-report.html --chrome-flags=\"--headless\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -49,7 +50,12 @@
     "onlyBuiltDependencies": [
       "@parcel/watcher",
       "@swc/core"
-    ]
+    ],
+    "overrides": {
+      "hono": ">=4.11.7",
+      "lodash": ">=4.17.23",
+      "lodash-es": ">=4.17.23"
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.28.6",
