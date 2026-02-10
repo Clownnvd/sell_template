@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { WebVitals } from "@/components/ui/web-vitals";
 
 import "./globals.css";
 
@@ -21,6 +22,7 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
+          <WebVitals />
           {children}
         </NextIntlClientProvider>
       </body>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { logger } from "@/lib/api/logger";
 
 interface RateLimitConfig {
   interval: number; // Time window in milliseconds
@@ -77,9 +78,11 @@ if (typeof setInterval !== "undefined" && !redis) {
 }
 
 function getClientIP(req: NextRequest): string {
+  // Use rightmost IP (set by proxy/load balancer, not spoofable by client)
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    const ips = forwarded.split(",").map((ip) => ip.trim());
+    return ips[ips.length - 1];
   }
 
   const realIP = req.headers.get("x-real-ip");
@@ -94,17 +97,21 @@ function getClientIP(req: NextRequest): string {
  * Rate limiter for API routes
  * Uses Upstash Redis in production, falls back to in-memory for development
  *
+ * @param userId - Optional user ID for per-user rate limiting on authenticated endpoints.
+ *                 When provided, rate limiting keys on userId instead of IP.
+ *
  * @example
- * const rateLimitResult = await rateLimit(req, { interval: 60000, maxRequests: 10 });
+ * const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "checkout", userId);
  * if (rateLimitResult) return rateLimitResult; // Returns 429 response
  */
 export async function rateLimit(
   req: NextRequest,
   config: RateLimitConfig,
-  identifier: string = "default"
+  identifier: string = "default",
+  userId?: string
 ): Promise<NextResponse | null> {
   const ip = getClientIP(req);
-  const key = `${identifier}:${ip}`;
+  const key = userId ? `${identifier}:user:${userId}` : `${identifier}:${ip}`;
 
   // Try Redis first
   const limiter = getRateLimiter(config, identifier);
@@ -114,6 +121,14 @@ export async function rateLimit(
       const { success, limit, remaining, reset } = await limiter.limit(key);
 
       if (!success) {
+        logger.warn("rate_limit_exceeded", {
+          ip,
+          path: req.nextUrl.pathname,
+          identifier,
+          userId,
+          limit,
+          remaining,
+        });
         const retryAfter = Math.ceil((reset - Date.now()) / 1000);
         return NextResponse.json(
           {
@@ -152,6 +167,13 @@ export async function rateLimit(
   }
 
   if (entry.count >= config.maxRequests) {
+    logger.warn("rate_limit_exceeded", {
+      ip,
+      path: req.nextUrl.pathname,
+      identifier,
+      userId,
+      limit: config.maxRequests,
+    });
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
     return NextResponse.json(
       {

@@ -4,6 +4,7 @@ export interface Product {
   description: string;
   price: number;
   priceInCents: number;
+  priceVND: number;
   stripePriceId: string;
   features: string[];
 }
@@ -15,6 +16,7 @@ export const product: Product = {
     "Production-ready Next.js SaaS starter kit with auth, payments, dashboard, and more.",
   price: 99,
   priceInCents: 9900,
+  priceVND: 2490000,
   stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_KING_TEMPLATE || "",
   features: [
     "Next.js 16 + React 19 + TypeScript",

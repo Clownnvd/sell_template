@@ -11,4 +11,6 @@ if (!process.env.STRIPE_SECRET_KEY) {
  */
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   typescript: true,
+  timeout: 15_000,
+  maxNetworkRetries: 2,
 });

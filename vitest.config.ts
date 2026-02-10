@@ -10,6 +10,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    env: {
+      NEXT_PUBLIC_STRIPE_PRICE_KING_TEMPLATE: "price_test_123",
+    },
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     setupFiles: ["./src/test/setup.ts"],
     coverage: {

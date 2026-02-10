@@ -11,25 +11,45 @@ const protectedRoutes = ["/dashboard", "/settings", "/billing"];
 // Auth routes - uncomment if you want to redirect logged-in users away from these
 // const authRoutes = ["/sign-in", "/sign-up", "/forgot-password", "/reset-password"];
 
-// Security headers to apply to all responses
-const securityHeaders = {
+function getAllowedOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) return null;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) return null;
+  try {
+    const allowed = new URL(appUrl).origin;
+    return requestOrigin === allowed ? allowed : null;
+  } catch {
+    return null;
+  }
+}
+
+// Security headers applied to ALL responses
+const securityHeaders: Record<string, string> = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-XSS-Protection": "1; mode=block",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://www.youtube.com;",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com; frame-src https://js.stripe.com https://www.youtube.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;",
 };
+
+// HSTS only in production (avoid locking localhost to HTTPS)
+if (process.env.NODE_ENV === "production") {
+  securityHeaders["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
+}
 
 function isRouteMatch(pathname: string, basePath: string) {
   return pathname === basePath || pathname.startsWith(`${basePath}/`);
 }
 
 function isAuthenticatedByCookies(req: NextRequest) {
-  // BetterAuth uses "better-auth.session_token" as the session cookie
-  const sessionToken = req.cookies.get("better-auth.session_token");
+  // Cookie name depends on prefix config in auth.ts
+  // With cookiePrefix: "king", the cookie is "king.session_token"
+  // Falls back to default "better-auth.session_token" if prefix not set
+  const sessionToken =
+    req.cookies.get("king.session_token") ??
+    req.cookies.get("better-auth.session_token");
 
-  // Check if session token exists and has a valid value
   if (sessionToken?.value && sessionToken.value.length > 20) {
     return true;
   }
@@ -37,8 +57,38 @@ function isAuthenticatedByCookies(req: NextRequest) {
   return false;
 }
 
+function isValidCallbackUrl(url: string): boolean {
+  // Block open redirect attacks
+  if (url.startsWith("//") || url.startsWith("/\\")) return false;
+  if (!url.startsWith("/")) return false;
+  try {
+    new URL(url, "http://localhost");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
+
+  // CORS: Handle preflight OPTIONS requests for API routes
+  const isApiRoute = pathname.startsWith("/api/");
+  const origin = request.headers.get("origin");
+  const allowedOrigin = getAllowedOrigin(origin);
+
+  if (isApiRoute && request.method === "OPTIONS") {
+    const preflightResponse = new NextResponse(null, { status: 204 });
+    if (allowedOrigin) {
+      preflightResponse.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+      preflightResponse.headers.set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+      preflightResponse.headers.set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With");
+      preflightResponse.headers.set("Access-Control-Max-Age", "86400");
+    }
+    preflightResponse.headers.set("X-Request-Id", requestId);
+    return preflightResponse;
+  }
 
   const isProtectedRoute = protectedRoutes.some((r) => isRouteMatch(pathname, r));
   const isAuthenticated = isAuthenticatedByCookies(request);
@@ -46,8 +96,11 @@ export function middleware(request: NextRequest) {
   if (isProtectedRoute && !isAuthenticated) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/sign-in";
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    if (isValidCallbackUrl(pathname)) {
+      loginUrl.searchParams.set("callbackUrl", pathname);
+    }
     const response = NextResponse.redirect(loginUrl);
+    response.headers.set("X-Request-Id", requestId);
     applySecurityHeaders(response);
     return response;
   }
@@ -63,8 +116,22 @@ export function middleware(request: NextRequest) {
   //   return response;
   // }
 
-  const response = NextResponse.next();
+  const response = NextResponse.next({
+    request: {
+      headers: new Headers({
+        ...Object.fromEntries(request.headers),
+        "x-request-id": requestId,
+      }),
+    },
+  });
+  response.headers.set("X-Request-Id", requestId);
   applySecurityHeaders(response);
+
+  // CORS: Set Access-Control-Allow-Origin on API responses
+  if (isApiRoute && allowedOrigin) {
+    response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+  }
+
   return response;
 }
 
@@ -76,12 +143,6 @@ function applySecurityHeaders(response: NextResponse) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/settings/:path*",
-    "/billing/:path*",
-    "/sign-in",
-    "/sign-up",
-    "/forgot-password",
-    "/reset-password",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

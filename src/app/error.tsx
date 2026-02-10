@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
+import { reportError } from "@/lib/error-reporter";
 
 export default function Error({
   error,
@@ -13,8 +14,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error("Application error:", error);
+    reportError(error, { boundary: "root" });
   }, [error]);
 
   return (

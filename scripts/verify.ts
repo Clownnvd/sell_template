@@ -15,7 +15,7 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
 // Colors for terminal output
 const c = {
@@ -102,10 +102,9 @@ function checkEnvVariables() {
     { key: "GITHUB_CLIENT_SECRET", desc: "GitHub OAuth client secret" },
     { key: "UPSTASH_REDIS_REST_URL", desc: "Upstash Redis URL (rate limiting)" },
     { key: "UPSTASH_REDIS_REST_TOKEN", desc: "Upstash Redis token (rate limiting)" },
-    { key: "NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY", desc: "Stripe Basic monthly price ID" },
-    { key: "NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY", desc: "Stripe Basic yearly price ID" },
-    { key: "NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY", desc: "Stripe Pro monthly price ID" },
-    { key: "NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY", desc: "Stripe Pro yearly price ID" },
+    { key: "GITHUB_PAT", desc: "GitHub PAT for repo invite" },
+    { key: "GITHUB_REPO_OWNER", desc: "GitHub repo owner" },
+    { key: "GITHUB_REPO_NAME", desc: "GitHub repo name" },
   ];
 
   for (const { key, desc, validate } of required) {
@@ -147,7 +146,7 @@ async function checkDatabase() {
   let prisma: PrismaClient | null = null;
 
   try {
-    const adapter = new PrismaPg({
+    const adapter = new PrismaNeon({
       connectionString: process.env.DATABASE_URL!,
     });
     prisma = new PrismaClient({ adapter });
@@ -160,7 +159,7 @@ async function checkDatabase() {
   }
 
   // Check Prisma models exist
-  const models = ["user", "session", "account", "verification", "emailLog", "subscription", "webhookEvent"];
+  const models = ["user", "session", "account", "verification", "emailLog", "purchase", "webhookEvent"];
   let missingModels = false;
 
   for (const model of models) {
@@ -235,22 +234,12 @@ function checkStripeConfiguration() {
     warn("Stripe Mode", "Could not detect test/live mode from key prefix");
   }
 
-  // Check price IDs
-  const priceIds = [
-    "NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY",
-    "NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY",
-    "NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY",
-    "NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY",
-  ];
-
-  const configured = priceIds.filter((id) => envExists(id));
-
-  if (configured.length === priceIds.length) {
-    pass("Stripe Prices", `All ${priceIds.length} price IDs configured`);
-  } else if (configured.length > 0) {
-    warn("Stripe Prices", `${configured.length}/${priceIds.length} price IDs configured`);
+  // Check product price ID
+  const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_KING_TEMPLATE;
+  if (priceId && priceId.startsWith("price_")) {
+    pass("Stripe Price", `King Template price ID configured`);
   } else {
-    warn("Stripe Prices", "No price IDs configured (subscriptions disabled)");
+    warn("Stripe Price", "NEXT_PUBLIC_STRIPE_PRICE_KING_TEMPLATE not configured");
   }
 }
 

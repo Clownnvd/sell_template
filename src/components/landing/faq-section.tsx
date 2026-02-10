@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { cn } from "@/utils/cn";
 
 const faqs = [
@@ -35,39 +36,51 @@ export function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="bg-zinc-50 px-4 py-24 sm:px-6 lg:px-8 dark:bg-zinc-900/50">
+    <section id="faq" className="bg-accent/30 px-4 py-16 sm:py-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl dark:text-white">
-            Frequently asked questions
-          </h2>
-        </div>
+        <ScrollReveal>
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              Frequently asked questions
+            </h2>
+          </div>
+        </ScrollReveal>
 
-        <div className="mt-12 divide-y divide-zinc-200 dark:divide-zinc-800">
+        <ScrollReveal delay={200}>
+        <div className="mt-12 divide-y divide-border">
           {faqs.map((faq, index) => (
             <div key={index}>
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="flex w-full items-center justify-between py-5 text-left"
+                aria-expanded={openIndex === index}
+                className="flex w-full items-center justify-between py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm"
               >
-                <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                <span className="text-sm font-medium text-foreground">
                   {faq.question}
                 </span>
                 <ChevronDown
                   className={cn(
-                    "size-4 shrink-0 text-zinc-400 transition-transform",
-                    openIndex === index && "rotate-180"
+                    "size-4 shrink-0 transition-transform duration-200",
+                    openIndex === index ? "rotate-180 text-primary" : "text-muted-foreground"
                   )}
                 />
               </button>
-              {openIndex === index && (
-                <p className="pb-5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  {faq.answer}
-                </p>
-              )}
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows,opacity] duration-200 ease-in-out",
+                  openIndex === index ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                )}
+              >
+                <div className="overflow-hidden">
+                  <p className="pb-5 text-sm leading-relaxed text-muted-foreground">
+                    {faq.answer}
+                  </p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
+        </ScrollReveal>
       </div>
     </section>
   );

@@ -7,6 +7,10 @@ datasource db {
   provider = "postgresql"
 }
 
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
 enum EmailStatus {
   PENDING
   SENT
@@ -15,18 +19,46 @@ enum EmailStatus {
 }
 
 enum PurchaseStatus {
+  PENDING
   COMPLETED
   REFUNDED
 }
 
+/// Payment gateway that processed the transaction
+enum PaymentMethod {
+  STRIPE
+  SEPAY
+}
+
+/// Product SKU identifier for purchase tracking
+enum ProductType {
+  KING_TEMPLATE
+}
+
+// ──────────────────────────────────────────────
+// Entity Relationship Diagram (text-based)
+//
+// User 1──* Session    (auth sessions, cascade delete)
+// User 1──* Account    (OAuth providers, cascade delete)
+// User 1──* Purchase   (one per product via composite unique)
+//
+// WebhookEvent         (standalone, idempotency tracking)
+// EmailLog             (standalone, email delivery audit)
+// Verification         (standalone, email/token verification)
+// ──────────────────────────────────────────────
+
 model User {
+  /// Globally unique CUID — non-sequential, safe for URLs
   id            String     @id @default(cuid())
   email         String     @unique
+  /// Display name — nullable because OAuth may not provide it
   name          String?
+  /// GitHub username for repo collaborator invite after purchase
   githubUsername String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   emailVerified Boolean    @default(false)
+  /// Avatar URL from OAuth provider or user upload
   image         String?
   sessions      Session[]
   accounts      Account[]
@@ -38,9 +70,11 @@ model User {
 model Session {
   id        String   @id
   expiresAt DateTime
+  /// Better Auth session token (unique, used for cookie lookup)
   token     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  /// Client IP from X-Forwarded-For (rightmost = proxy-set)
   ipAddress String?
   userAgent String?
   userId    String
@@ -53,7 +87,9 @@ model Session {
 
 model Account {
   id                    String    @id
+  /// Provider-specific account ID (e.g., GitHub user ID, Google sub)
   accountId             String
+  /// OAuth provider name: "github", "google", "credential"
   providerId            String
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -63,6 +99,7 @@ model Account {
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
   scope                 String?
+  /// Hashed password — only set for credential (email/password) provider
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
@@ -73,7 +110,9 @@ model Account {
 
 model Verification {
   id         String   @id
+  /// What this verification is for (e.g., email address, password reset token)
   identifier String
+  /// The verification token or code value
   value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
@@ -85,11 +124,15 @@ model Verification {
 
 model EmailLog {
   id        String      @id @default(cuid())
+  /// Recipient email address
   to        String
   subject   String
+  /// Template name used (e.g., "welcome", "verification", "password-reset")
   template  String
   status    EmailStatus @default(PENDING)
+  /// Resend API message ID for delivery tracking
   resendId  String?
+  /// Error message if delivery failed
   error     String?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -100,30 +143,52 @@ model EmailLog {
 }
 
 model Purchase {
-  id               String         @id @default(cuid())
-  userId           String
-  stripePaymentId  String         @unique
-  stripeCustomerId String?
-  productType      String         @default("KING_TEMPLATE")
-  amount           Int
-  status           PurchaseStatus @default(COMPLETED)
-  githubInviteSent Boolean        @default(false)
-  githubUsername    String?
-  purchasedAt      DateTime       @default(now())
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                 String         @id @default(cuid())
+  userId             String
+  /// Which payment gateway processed this (STRIPE or SEPAY)
+  paymentMethod      PaymentMethod  @default(STRIPE)
+  /// Stripe PaymentIntent ID (pi_xxx) — null for SePay purchases
+  stripePaymentId    String?        @unique
+  /// Stripe Customer ID (cus_xxx) — reused across purchases
+  stripeCustomerId   String?
+  /// SePay transaction ID from webhook callback
+  sepayTransactionId String?        @unique
+  /// Unique code for SePay QR payment matching (format: KT-XXXXXXXX)
+  paymentCode        String?        @unique
+  /// Product SKU — enforces one purchase per product per user
+  productType        ProductType    @default(KING_TEMPLATE)
+  /// Amount in smallest currency unit (cents for USD, dong for VND)
+  amount             Int
+  /// ISO 4217 currency code
+  currency           String         @default("USD")
+  status             PurchaseStatus @default(COMPLETED)
+  githubInviteSent   Boolean        @default(false)
+  /// GitHub username at time of invite (may differ from user.githubUsername if changed later)
+  githubUsername      String?
+  /// SePay pending purchase expiration — null for completed or Stripe purchases
+  expiresAt          DateTime?
+  /// Actual payment confirmation time — null while PENDING, set when status → COMPLETED
+  purchasedAt        DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@unique([userId, productType], name: "one_purchase_per_product")
   @@index([status])
+  @@index([userId, status])
+  @@index([paymentCode])
   @@map("purchase")
 }
 
 model WebhookEvent {
+  /// Event ID from payment provider (e.g., evt_xxx for Stripe)
   id          String   @id
+  /// Event type (e.g., "checkout.session.completed")
   type        String
   processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([type])
   @@map("webhook_event")

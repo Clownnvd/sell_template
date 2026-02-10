@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
+import { reportError } from "@/lib/error-reporter";
 
 export default function DashboardError({
   error,
@@ -13,8 +14,7 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error("Dashboard error:", error);
+    reportError(error, { boundary: "dashboard" });
   }, [error]);
 
   return (

@@ -10,6 +10,6 @@ export const updateProfileSchema = z.object({
     .url("Invalid URL")
     .optional()
     .or(z.literal("")),
-});
+}).strict();
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

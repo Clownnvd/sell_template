@@ -1,44 +1,77 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { WelcomeEmail } from "@/lib/email/templates/email-template";
 import { Resend } from "resend";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { auth } from "@/lib/auth";
 import { verifyCsrf } from "@/lib/csrf";
+import {
+  successResponse,
+  unauthorizedError,
+  serverError,
+  NO_CACHE_HEADERS,
+} from "@/lib/api/response";
+import { logRequest } from "@/lib/api/logger";
+import { serverEnv } from "@/lib/env";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
+const resend = new Resend(serverEnv.RESEND_API_KEY);
+const SEND_TIMEOUT_MS = 10_000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+/**
+ * POST /api/send
+ * Sends a welcome email to the authenticated user via Resend.
+ * @auth Required
+ * @rateLimit 5/min (per user)
+ */
 export async function POST(req: NextRequest) {
-  // CSRF protection
+  const start = Date.now();
+
   const csrfResult = verifyCsrf(req);
   if (csrfResult) return csrfResult;
 
-  // Authentication required - prevent spam abuse
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { success: false, error: "Authentication required" },
-      { status: 401 }
-    );
+    logRequest(req, 401, start);
+    return unauthorizedError("Authentication required");
   }
 
-  // Rate limiting: 5 requests per minute for email sending
-  const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "send-email");
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "send-email", session.user.id);
   if (rateLimitResult) return rateLimitResult;
 
+  const userEmail = session.user.email;
+  const userName = session.user.name?.split(" ")[0] || "there";
+
   try {
-    const { data, error } = await resend.emails.send({
-      from: 'Acme <onboarding@resend.dev>',
-      to: ['delivered@resend.dev'],
-      subject: 'Hello world',
-      react: WelcomeEmail({ firstName: 'John' }),
-    });
+    const { data, error } = await withTimeout(
+      resend.emails.send({
+        from: `King Template <${serverEnv.RESEND_FROM || "onboarding@resend.dev"}>`,
+        to: [userEmail],
+        subject: "Welcome to King Template",
+        react: WelcomeEmail({ firstName: userName }),
+      }),
+      SEND_TIMEOUT_MS
+    );
 
     if (error) {
-      return NextResponse.json({ success: false, error: "Failed to send email" }, { status: 500 });
+      logRequest(req, 500, start, session.user.id);
+      return serverError("Failed to send email");
     }
 
-    return NextResponse.json({ success: true, data });
+    logRequest(req, 200, start, session.user.id);
+    return successResponse(data, 200, NO_CACHE_HEADERS);
   } catch {
-    return NextResponse.json({ success: false, error: "Failed to send email" }, { status: 500 });
+    logRequest(req, 500, start, session.user.id);
+    return serverError("Failed to send email");
   }
 }

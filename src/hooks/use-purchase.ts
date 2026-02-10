@@ -14,7 +14,7 @@ export interface PurchaseData {
   amount: number;
   githubInviteSent: boolean;
   githubUsername: string | null;
-  purchasedAt: string;
+  purchasedAt: string | null;
 }
 
 interface PurchaseResponse {
@@ -26,20 +26,25 @@ export function usePurchase() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<PurchaseData | null>(null);
-  const [hasPurchased, setHasPurchased] = useState(false);
   const [isLoadingPurchase, setIsLoadingPurchase] = useState(true);
+
+  const hasPurchased = purchase?.status === "COMPLETED";
 
   const fetchPurchase = useCallback(async () => {
     setIsLoadingPurchase(true);
+    setError(null);
     try {
       const response = await fetch("/api/user/purchase");
+      if (response.status === 401) {
+        // Not logged in — expected, not an error
+        return;
+      }
       const data: ApiResponse<PurchaseResponse> = await response.json();
       if (data.success && data.data) {
         setPurchase(data.data.purchase);
-        setHasPurchased(data.data.purchased);
       }
     } catch {
-      // User not logged in or error
+      setError("Failed to load purchase status");
     } finally {
       setIsLoadingPurchase(false);
     }

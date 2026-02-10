@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { twoFactor } from "better-auth/plugins";
 
 import prisma from "@/lib/db";
 import { sendReactEmail } from "@/lib/email/resend";
+import { logAuthEvent } from "@/lib/auth/audit-log";
 
 import { ResetPasswordTemplate } from "@/lib/email/templates/reset-password";
 import { VerifyEmailTemplate } from "@/lib/email/templates/verify-email";
@@ -12,9 +14,28 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
+  // Session configuration
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // Refresh token daily
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 min cache
+    },
+  },
+
+  // Cookie security
+  advanced: {
+    cookiePrefix: "king",
+    useSecureCookies: process.env.NODE_ENV === "production",
+    defaultCookieSameSite: "lax" as const,
+  },
+
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // Set to true when RESEND_API_KEY is configured
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
+    requireEmailVerification: Boolean(process.env.RESEND_API_KEY),
 
     sendResetPassword: async ({ user, url }) => {
       await sendReactEmail({
@@ -45,8 +66,6 @@ export const auth = betterAuth({
     },
   },
 
-  // OAuth providers - configured via environment variables
-  // Set GOOGLE_CLIENT_ID/SECRET and GITHUB_CLIENT_ID/SECRET to enable
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
@@ -60,11 +79,46 @@ export const auth = betterAuth({
     },
   },
 
-  // Account linking - allow users to link multiple OAuth accounts
   account: {
     accountLinking: {
       enabled: true,
       trustedProviders: ["google", "github"],
+    },
+  },
+
+  // Plugins
+  plugins: [
+    twoFactor({
+      issuer: "King Template",
+    }),
+  ],
+
+  // Audit logging for auth events
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          logAuthEvent("sign_up", user.id);
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session) => {
+          logAuthEvent("sign_in", session.userId, {
+            ip: session.ipAddress ?? undefined,
+          });
+        },
+      },
+    },
+    account: {
+      create: {
+        after: async (account) => {
+          logAuthEvent("oauth_link", account.userId, {
+            provider: account.providerId,
+          });
+        },
+      },
     },
   },
 });

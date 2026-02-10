@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Menu, X, ArrowRight } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -12,14 +13,17 @@ import { cn } from "@/utils/cn";
 
 type NavItem = { label: string; href: string };
 
-export function LandingHeaderClient({
-  navItems,
-  isAuthed,
-}: {
-  navItems: NavItem[];
-  isAuthed: boolean;
-}) {
+const navItems: NavItem[] = [
+  { label: "Features", href: "/#features" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "FAQ", href: "/#faq" },
+];
+
+export function LandingHeaderClient() {
   const t = useTranslations("navigation");
+  const { data: session } = useSession();
+  const isAuthed = !!session?.user;
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -34,19 +38,19 @@ export function LandingHeaderClient({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
+        "sticky top-0 z-50 w-full transition-[background-color,border-color,box-shadow] duration-300",
         scrolled
-          ? "border-b border-zinc-200 bg-white/90 shadow-sm backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90"
+          ? "border-b border-border bg-background/90 shadow-sm backdrop-blur-xl"
           : "bg-transparent"
       )}
     >
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-primary text-white">
             <span className="text-sm font-bold">K</span>
           </div>
-          <span className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
+          <span className="text-base font-semibold tracking-tight text-foreground">
             King Template
           </span>
         </Link>
@@ -57,7 +61,7 @@ export function LandingHeaderClient({
             <a
               key={item.href}
               href={item.href}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {item.label}
             </a>
@@ -80,7 +84,7 @@ export function LandingHeaderClient({
               </Button>
               <Link
                 href="/sign-up"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                className="shine-effect inline-flex items-center gap-1.5 rounded-lg bg-gradient-primary px-4 py-2 text-sm font-medium text-white transition-shadow hover:shadow-lg"
               >
                 Buy Now — $99
                 <ArrowRight className="size-3.5" />
@@ -95,7 +99,7 @@ export function LandingHeaderClient({
           <ThemeToggle />
           <button
             type="button"
-            className="inline-flex size-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition-colors hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-white"
+            className="inline-flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-label="Toggle menu"
@@ -108,17 +112,17 @@ export function LandingHeaderClient({
       {/* Mobile menu */}
       <div
         className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out md:hidden",
-          open ? "max-h-96 border-t border-zinc-200 dark:border-zinc-800" : "max-h-0"
+          "overflow-hidden transition-[max-height,border-color] duration-300 ease-in-out md:hidden",
+          open ? "max-h-96 border-t border-border" : "max-h-0"
         )}
       >
-        <div className="mx-auto max-w-5xl bg-white/95 px-4 py-4 backdrop-blur-lg dark:bg-zinc-950/95">
+        <div className="mx-auto max-w-5xl bg-background/95 px-4 py-4 backdrop-blur-lg">
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-4 py-3 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                className="rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 onClick={() => setOpen(false)}
               >
                 {item.label}
@@ -127,17 +131,17 @@ export function LandingHeaderClient({
           </nav>
 
           {isAuthed ? (
-            <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <div className="mt-4 border-t border-border pt-4">
               <Button asChild variant="outline" className="w-full" onClick={() => setOpen(false)}>
                 <Link href="/dashboard">{t("dashboard")}</Link>
               </Button>
             </div>
           ) : (
-            <div className="mt-4 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
               <Link
                 href="/sign-up"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-3 text-sm font-medium text-white transition-shadow hover:shadow-lg"
               >
                 Buy Now — $99
                 <ArrowRight className="size-4" />

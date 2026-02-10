@@ -8,15 +8,34 @@ import {
   successResponse,
   errorResponse,
   validationError,
+  unauthorizedError,
   serverError,
+  requireJsonBody,
+  ErrorCodes,
+  NO_CACHE_HEADERS,
 } from "@/lib/api/response";
+import { logRequest } from "@/lib/api/logger";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/**
+ * POST /api/stripe/checkout
+ * Creates a Stripe checkout session for the $99 one-time payment.
+ * @auth Required
+ * @rateLimit 5/min (per IP)
+ */
 export async function POST(req: NextRequest) {
+  const start = Date.now();
+
   const csrfResult = verifyCsrf(req);
   if (csrfResult) return csrfResult;
 
   const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "checkout");
   if (rateLimitResult) return rateLimitResult;
+
+  const ctCheck = requireJsonBody(req);
+  if (ctCheck) return ctCheck;
 
   try {
     const session = await requireAuth();
@@ -42,19 +61,23 @@ export async function POST(req: NextRequest) {
     });
 
     if (!checkoutSession.url) {
-      return errorResponse("Failed to create checkout session", 500);
+      return serverError("Failed to create checkout session");
     }
 
-    return successResponse({ url: checkoutSession.url });
+    logRequest(req, 200, start);
+    return successResponse({ url: checkoutSession.url }, 200, NO_CACHE_HEADERS);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Unauthorized")) {
-        return errorResponse("Unauthorized", 401);
+        logRequest(req, 401, start);
+        return unauthorizedError();
       }
       if (error.message.includes("already purchased")) {
-        return errorResponse(error.message, 409);
+        logRequest(req, 409, start);
+        return errorResponse(error.message, 409, undefined, ErrorCodes.CONFLICT);
       }
     }
+    logRequest(req, 500, start);
     return serverError();
   }
 }

@@ -39,31 +39,29 @@ Featuring a **Ferrari-inspired luxury design** (red/black/gold palette) that mak
 - Security headers (CSP, X-Frame-Options, XSS Protection)
 - Two-layer auth: Edge middleware + API-level verification
 
-### 💳 Payments & Subscriptions
+### 💳 Payments
 
-- **Stripe** checkout sessions & customer portal
-- 3-tier pricing: Free ($0), Basic ($29/mo), Pro ($99/mo)
-- Monthly/yearly billing toggle with yearly savings
+- **Stripe** one-time checkout ($99) — no subscriptions
+- **SePay** Vietnamese bank transfer via VietQR (optional)
 - Webhook handling with signature verification & idempotency
-- Subscription lifecycle management (upgrade, downgrade, cancel)
-- Automatic plan sync via Stripe webhooks
+- Duplicate purchase prevention (composite unique per user per product)
+- GitHub collaborator invite after purchase (automatic repo access)
 
 ### 🎨 Landing Page & Design
 
 - Ferrari-themed luxury design (red/black/gold palette)
-- 9+ landing sections: Hero, Video, Features, Logos, How It Works, Testimonials, Pricing, FAQ, CTA
-- Horizontal logo marquee with 12 real company SVGs (GitHub, Google, Vercel, Stripe, etc.)
-- Interactive Purchase dropdown with plan comparison
+- 12+ landing sections: Hero, Parallax, Video, Features, ROI, Logos, How It Works, Testimonials, Pricing, Product Preview, FAQ, CTA
+- Horizontal logo marquee with real company SVGs
 - Fully responsive (mobile, tablet, desktop)
 - Dark/light mode with smooth transitions
 
 ### 📊 Dashboard
 
 - Sidebar navigation with collapsible layout
-- Analytics, Projects, Team, and Settings pages
-- Billing management with Stripe portal integration
+- Purchase status & GitHub repo access form
+- Settings pages (profile, account)
+- Help page
 - User profile with avatar support
-- Plans overlay for quick upgrade prompts
 
 ### 🌍 Internationalization
 
@@ -83,6 +81,75 @@ Featuring a **Ferrari-inspired luxury design** (red/black/gold palette) that mak
 
 ---
 
+## 🔌 API Endpoints
+
+All API routes return a consistent envelope: `{ success, data?, error?, code?, errors? }`
+
+| Method | Path | Auth | Rate Limit | Description |
+|--------|------|------|------------|-------------|
+| `POST` | `/api/stripe/checkout` | Yes | Strict (5/min) | Create Stripe checkout session |
+| `POST` | `/api/checkout/sepay` | Yes | Strict (5/min) | Create SePay QR payment |
+| `GET` | `/api/checkout/sepay?id=` | Yes | Relaxed (60/min) | Poll SePay payment status |
+| `GET` | `/api/user/purchase` | Yes | Standard (20/min) | Get user's purchase status |
+| `PATCH` | `/api/user/github-username` | Yes | Strict (5/min) | Update GitHub username + trigger invite |
+| `GET` | `/api/user/profile` | Yes | Standard (20/min) | Get current user profile |
+| `PATCH` | `/api/user/profile` | Yes | 10/min | Update user profile (name, avatar) |
+| `POST` | `/api/send` | Yes | Strict (5/min) | Send welcome email |
+| `POST` | `/api/webhooks/stripe` | Signature | Webhook (100/min) | Stripe webhook handler |
+| `POST` | `/api/webhooks/sepay` | API Key | Webhook (100/min) | SePay webhook handler |
+| `GET` | `/api/health` | No | — | Health check (DB connectivity) |
+| `GET` | `/api/ready` | No | — | Readiness probe (DB + env vars) |
+
+**Headers**: All responses include `X-Request-Id` for tracing. Authenticated responses include `Cache-Control: private, no-store`. Rate-limited responses include `Retry-After`, `X-RateLimit-*` headers.
+
+### Example Request/Response
+
+```bash
+# Create checkout session
+curl -X POST http://localhost:3000/api/stripe/checkout \
+  -H "Content-Type: application/json" \
+  -H "Cookie: better-auth.session_token=..." \
+  -H "Origin: http://localhost:3000" \
+  -d '{}'
+
+# Success (200)
+{
+  "success": true,
+  "data": { "url": "https://checkout.stripe.com/c/pay/cs_test_..." }
+}
+
+# Error (409 — already purchased)
+{
+  "success": false,
+  "error": "You have already purchased this product",
+  "code": "CONFLICT"
+}
+
+# Validation Error (400)
+{
+  "success": false,
+  "error": "Validation failed",
+  "code": "VALIDATION_ERROR",
+  "errors": { "githubUsername": ["Must start with a letter or number"] }
+}
+```
+
+### Error Code Catalog
+
+| Code | HTTP | Cause | Resolution |
+|------|------|-------|------------|
+| `VALIDATION_ERROR` | 400 | Invalid request body or parameters | Check `errors` field for field-level details |
+| `UNAUTHORIZED` | 401 | Missing or invalid session | Sign in and retry with valid session cookie |
+| `FORBIDDEN` | 403 | CSRF check failed or insufficient permissions | Include `Origin` header matching app URL |
+| `NOT_FOUND` | 404 | Resource does not exist | Verify the resource ID is correct |
+| `CONFLICT` | 409 | Duplicate action (e.g., already purchased) | No action needed — operation already completed |
+| `UNSUPPORTED_MEDIA_TYPE` | 415 | Wrong Content-Type header | Set `Content-Type: application/json` |
+| `RATE_LIMITED` | 429 | Too many requests | Wait for `Retry-After` seconds |
+| `SERVICE_UNAVAILABLE` | 503 | Payment provider not configured | Check environment variable configuration |
+| `SERVER_ERROR` | 500 | Unexpected internal error | Retry; if persistent, check server logs |
+
+---
+
 ## 🛠️ Tech Stack
 
 | Category | Technology | Version |
@@ -93,7 +160,7 @@ Featuring a **Ferrari-inspired luxury design** (red/black/gold palette) that mak
 | 🎨 Styling | **Tailwind CSS** (OKLCH colors) | 4.x |
 | 🧩 Components | **ShadCN UI** + Radix Primitives | — |
 | 🔐 Auth | **Better Auth** (Email, OAuth) | 1.4.14 |
-| 💳 Payments | **Stripe** (Checkout, Portal, Webhooks) | 20.2.0 |
+| 💳 Payments | **Stripe** (One-time Checkout, Webhooks) + **SePay** | 20.2.0 |
 | 🗄️ Database | **PostgreSQL** via Prisma ORM | Prisma 7.2.0 |
 | ☁️ DB Hosting | **Neon** (Serverless PostgreSQL) | — |
 | 📧 Email | **Resend** + React Email | 6.7.0 |
@@ -129,25 +196,17 @@ pnpm install
 Create `.env.local` in the project root:
 
 ```env
-# 🗄️ Database (Neon)
-DATABASE_URL="postgresql://user:pass@ep-xxx.region.aws.neon.tech/db?sslmode=require"
+# 🗄️ Database (Neon) — pooled for queries, direct for migrations
+DATABASE_URL="postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&pgbouncer=true"
+DIRECT_URL="postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
 # 🔐 Auth (BetterAuth)
 BETTER_AUTH_SECRET="<generate-with-openssl-rand-base64-32>"
-BETTER_AUTH_URL="http://localhost:3000"
-
-# 📧 Email (Resend)
-RESEND_API_KEY="re_xxxxxxxxxxxx"
-EMAIL_FROM="noreply@yourdomain.com"
 
 # 💳 Payment (Stripe)
 STRIPE_SECRET_KEY="sk_test_xxxxxxxxxxxx"
 STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxx"
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_xxxxxxxxxxxx"
-NEXT_PUBLIC_STRIPE_PRICE_BASIC_MONTHLY="price_..."
-NEXT_PUBLIC_STRIPE_PRICE_BASIC_YEARLY="price_..."
-NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY="price_..."
-NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY="price_..."
 
 # 🔑 OAuth (optional)
 GITHUB_CLIENT_ID="..."
@@ -157,7 +216,6 @@ GOOGLE_CLIENT_SECRET="..."
 
 # 🌐 App
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_APP_NAME="King Template"
 ```
 
 Generate your auth secret:
@@ -168,8 +226,8 @@ openssl rand -base64 32
 ### 3️⃣ Database Setup
 
 ```bash
-pnpm prisma generate
-pnpm prisma db push
+npx prisma migrate dev
+# Seed runs automatically via prisma.config.ts
 ```
 
 ### 4️⃣ Verify Setup
@@ -193,30 +251,32 @@ Open [http://localhost:3000](http://localhost:3000) to see your app.
 ```
 king-template/
 ├── prisma/
-│   └── schema.prisma            # Database schema (User, Session, Subscription)
+│   └── schema.prisma            # Database schema (User, Session, Purchase)
 ├── src/
 │   ├── app/
 │   │   ├── (auth)/              # 🔐 Auth pages (sign-in, sign-up, verify-email)
 │   │   ├── (landing)/           # 🏠 Landing page & pricing
 │   │   ├── api/
-│   │   │   ├── stripe/          # 💳 Stripe checkout & portal endpoints
-│   │   │   ├── user/            # 👤 User profile & subscription endpoints
-│   │   │   └── webhooks/        # 🔔 Stripe webhook handler
-│   │   └── dashboard/           # 📊 Dashboard (billing, settings, projects, team, analytics)
+│   │   │   ├── stripe/          # 💳 Stripe checkout endpoint
+│   │   │   ├── checkout/        # 💳 SePay checkout endpoint
+│   │   │   ├── user/            # 👤 User profile & purchase endpoints
+│   │   │   └── webhooks/        # 🔔 Stripe + SePay webhook handlers
+│   │   └── dashboard/           # 📊 Dashboard (purchase status, settings, help)
 │   ├── components/
 │   │   ├── auth/                # Auth forms, OAuth buttons
-│   │   ├── dashboard/           # Sidebar, header, user menu, plans overlay
-│   │   ├── landing/             # Landing sections (hero, features, video, pricing, etc.)
-│   │   │   └── header/          # Landing header with Purchase dropdown
+│   │   ├── dashboard/           # Sidebar, header, user menu
+│   │   ├── landing/             # Landing sections (hero, features, pricing, ROI, etc.)
+│   │   │   └── header/          # Landing header with CTA
 │   │   └── ui/                  # Shared UI (button, card, input, theme toggle)
-│   ├── config/                  # 📋 Plans & pricing configuration
-│   ├── hooks/                   # 🪝 Custom hooks (useAuth, useSubscription, usePassword, useLocale)
+│   ├── config/                  # 📋 Product & pricing configuration
+│   ├── hooks/                   # 🪝 Custom hooks (useAuth, usePurchase, usePassword, useLocale)
 │   ├── i18n/                    # 🌍 Internationalization config
 │   ├── lib/
 │   │   ├── api/                 # API response helpers
 │   │   ├── auth/                # Better Auth configuration
 │   │   ├── email/               # Email service (Resend + React Email)
-│   │   ├── payment/             # Stripe service & client
+│   │   ├── payment/             # Stripe + SePay service & client
+│   │   ├── github/              # GitHub collaborator invite service
 │   │   └── validations/         # Zod schemas
 │   ├── messages/                # 🗂️ Translation files (en.json, vi.json)
 │   └── middleware.ts            # 🛡️ Security middleware (CSP, rate limiting, CSRF)
@@ -228,18 +288,11 @@ king-template/
 
 ---
 
-## 💰 Pricing Plans
+## 💰 Pricing
 
-| | 🆓 Free | ⚡ Basic | 🚀 Pro |
-|---|---|---|---|
-| **Monthly** | $0 | $29/mo | $99/mo |
-| **Yearly** | $0 | $290/yr | $990/yr |
-| **Projects** | 1 | 5 | Unlimited |
-| **Team Members** | 3 | 10 | 50 |
-| **Storage** | 1 GB | 10 GB | 100 GB |
-| **Priority Support** | — | ✅ | ✅ |
-| **Advanced Analytics** | — | — | ✅ |
-| **Custom Integrations** | — | — | ✅ |
+**One-time payment: $99 USD** (or VND equivalent via SePay)
+
+Includes lifetime access to the private GitHub repository + all future updates.
 
 ---
 
@@ -284,10 +337,62 @@ https://yourdomain.com/api/webhooks/stripe
 
 Events to listen for:
 - `checkout.session.completed`
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
-- `invoice.payment_succeeded`
-- `invoice.payment_failed`
+
+---
+
+## 🗄️ Database & Backup
+
+### Provider: Neon PostgreSQL (ap-southeast-1)
+
+| Feature | Details |
+|---------|---------|
+| **PITR** | Enabled (Point-in-Time Recovery) |
+| **Retention** | Free: 24h, Pro: 7 days (configurable) |
+| **RTO** | < 5 minutes (Neon branch restore) |
+| **RPO** | < 1 minute (continuous WAL archiving) |
+
+### Connection Architecture
+
+- **DATABASE_URL** (pooled via pgbouncer) — used by app queries (`src/lib/db/index.ts`)
+- **DIRECT_URL** (direct, no pgbouncer) — used by migration engine (`prisma.config.ts`)
+
+### Pre-Migration Safety
+
+Before running destructive migrations on production:
+
+```bash
+# 1. Create a Neon branch backup
+neon branches create --name pre-migration-backup
+
+# 2. Test migration on the branch
+npx prisma migrate deploy
+
+# 3. If something goes wrong, restore from branch
+neon branches restore pre-migration-backup
+```
+
+### Backup Verification (monthly recommended)
+
+```bash
+# 1. Create a test branch from production
+neon branches create --name backup-test-$(date +%Y%m%d)
+
+# 2. Connect to the branch and verify data
+psql $BRANCH_CONNECTION_STRING -c "SELECT count(*) FROM \"user\"; SELECT count(*) FROM purchase;"
+
+# 3. Verify migrations replay cleanly
+DATABASE_URL=$BRANCH_CONNECTION_STRING npx prisma migrate deploy
+
+# 4. Clean up test branch
+neon branches delete backup-test-$(date +%Y%m%d)
+```
+
+### Database Reset (development only)
+
+```bash
+npx prisma migrate reset
+# Drops all tables, replays migrations, runs seed
+```
 
 ---
 

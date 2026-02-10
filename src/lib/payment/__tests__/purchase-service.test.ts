@@ -35,12 +35,14 @@ describe("Purchase Service", () => {
     it("returns purchase record when exists", async () => {
       const mockPurchase = {
         id: "purchase_1",
-        userId: "user_1",
-        stripePaymentId: "pi_123",
         status: "COMPLETED",
+        productType: "KING_TEMPLATE",
+        amount: 9900,
+        currency: "USD",
         githubInviteSent: false,
         githubUsername: null,
         purchasedAt: new Date(),
+        createdAt: new Date(),
       };
       prismaMock.purchase.findFirst.mockResolvedValue(mockPurchase);
 
@@ -48,6 +50,20 @@ describe("Purchase Service", () => {
       const result = await getPurchase("user_1");
 
       expect(result).toEqual(mockPurchase);
+      expect(prismaMock.purchase.findFirst).toHaveBeenCalledWith({
+        where: { userId: "user_1", status: "COMPLETED" },
+        select: {
+          id: true,
+          status: true,
+          productType: true,
+          amount: true,
+          currency: true,
+          githubInviteSent: true,
+          githubUsername: true,
+          purchasedAt: true,
+          createdAt: true,
+        },
+      });
     });
 
     it("returns null when no purchase exists", async () => {

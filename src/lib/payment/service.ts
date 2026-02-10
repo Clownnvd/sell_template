@@ -44,10 +44,15 @@ export async function createCheckoutSession({
 }): Promise<{ url: string | null }> {
   const existingPurchase = await prisma.purchase.findFirst({
     where: { userId, status: "COMPLETED" },
+    select: { id: true },
   });
 
   if (existingPurchase) {
     throw new Error("You have already purchased this product");
+  }
+
+  if (!product.stripePriceId) {
+    throw new Error("Stripe price not configured");
   }
 
   const customerId = await getOrCreateStripeCustomer(userId, email);
@@ -76,6 +81,17 @@ export async function createCheckoutSession({
 export async function getPurchase(userId: string) {
   return prisma.purchase.findFirst({
     where: { userId, status: "COMPLETED" },
+    select: {
+      id: true,
+      status: true,
+      productType: true,
+      amount: true,
+      currency: true,
+      githubInviteSent: true,
+      githubUsername: true,
+      purchasedAt: true,
+      createdAt: true,
+    },
   });
 }
 
