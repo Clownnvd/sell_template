@@ -1,8 +1,8 @@
-// middleware.ts
-// Security: This middleware handles route-level protection using cookie detection.
+// proxy.ts
+// Security: This proxy handles route-level protection using cookie detection.
 // Actual session verification happens in API routes via requireAuth().
 // Two-layer approach:
-// 1. Middleware (Edge): Fast cookie check for page-level redirects + security headers
+// 1. Proxy (Node): Fast cookie check for page-level redirects + security headers
 // 2. API routes (Node): Full session verification with database lookup
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -69,7 +69,7 @@ function isValidCallbackUrl(url: string): boolean {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
 

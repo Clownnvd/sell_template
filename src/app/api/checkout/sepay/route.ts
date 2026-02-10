@@ -81,9 +81,9 @@ export async function GET(req: NextRequest) {
     await requireAuth();
 
     const purchaseId = req.nextUrl.searchParams.get("id");
-    if (!purchaseId) {
+    if (!purchaseId || !/^[a-zA-Z0-9_-]{1,100}$/.test(purchaseId)) {
       logRequest(req, 400, getStart);
-      return errorResponse("Missing purchase ID", 400, undefined, ErrorCodes.VALIDATION_ERROR);
+      return errorResponse("Invalid purchase ID", 400, undefined, ErrorCodes.VALIDATION_ERROR);
     }
 
     const status = await getSepayPurchaseStatus(purchaseId);

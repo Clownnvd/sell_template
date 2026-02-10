@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { revalidatePathWithLog } from "@/lib/cache-utils";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth/server";
 import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { updateProfileSchema } from "@/lib/validations/profile";
@@ -14,23 +14,19 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/user/profile
  * Returns the current user's profile
+ * @auth Required
+ * @rateLimit 20/min (per user)
  */
 export async function GET(req: NextRequest) {
   const start = Date.now();
 
-  const session = await auth.api.getSession({
-    headers: req.headers,
-  });
-
-  const userId = session?.user?.id;
-  if (!userId) {
-    return unauthorizedError();
-  }
-
-  const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "profile-get", userId);
-  if (rateLimitResult) return rateLimitResult;
-
   try {
+    const session = await requireAuth();
+    const userId = session.user.id;
+
+    const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "profile-get", userId);
+    if (rateLimitResult) return rateLimitResult;
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -57,7 +53,11 @@ export async function GET(req: NextRequest) {
       emailVerified: user.emailVerified,
       createdAt: user.createdAt.toISOString(),
     }, 200, NO_CACHE_HEADERS);
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      logRequest(req, 401, start);
+      return unauthorizedError();
+    }
     logRequest(req, 500, start);
     return serverError("Failed to fetch profile");
   }
@@ -66,6 +66,8 @@ export async function GET(req: NextRequest) {
 /**
  * PATCH /api/user/profile
  * Updates the current user's profile (name, avatarUrl)
+ * @auth Required
+ * @rateLimit 10/min (per user)
  */
 export async function PATCH(req: NextRequest) {
   const patchStart = Date.now();
@@ -76,33 +78,27 @@ export async function PATCH(req: NextRequest) {
   const ctCheck = requireJsonBody(req);
   if (ctCheck) return ctCheck;
 
-  const session = await auth.api.getSession({
-    headers: req.headers,
-  });
-
-  const userId = session?.user?.id;
-  if (!userId) {
-    return unauthorizedError();
-  }
-
-  const rateLimitResult = await rateLimit(req, { maxRequests: 10, interval: 60_000 }, "profile-update", userId);
-  if (rateLimitResult) return rateLimitResult;
-
-  let body: unknown;
   try {
-    body = await req.json();
-  } catch {
-    return errorResponse("Invalid JSON body", 400, undefined, ErrorCodes.VALIDATION_ERROR);
-  }
+    const session = await requireAuth();
+    const userId = session.user.id;
 
-  const parseResult = updateProfileSchema.safeParse(body);
-  if (!parseResult.success) {
-    return errorResponse("Validation failed", 400, parseResult.error.flatten().fieldErrors as Record<string, string[]>, ErrorCodes.VALIDATION_ERROR);
-  }
+    const rateLimitResult = await rateLimit(req, { maxRequests: 10, interval: 60_000 }, "profile-update", userId);
+    if (rateLimitResult) return rateLimitResult;
 
-  const { name, avatarUrl } = parseResult.data;
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, undefined, ErrorCodes.VALIDATION_ERROR);
+    }
 
-  try {
+    const parseResult = updateProfileSchema.safeParse(body);
+    if (!parseResult.success) {
+      return errorResponse("Validation failed", 400, parseResult.error.flatten().fieldErrors as Record<string, string[]>, ErrorCodes.VALIDATION_ERROR);
+    }
+
+    const { name, avatarUrl } = parseResult.data;
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -130,8 +126,12 @@ export async function PATCH(req: NextRequest) {
       emailVerified: updatedUser.emailVerified,
       createdAt: updatedUser.createdAt.toISOString(),
     }, 200, NO_CACHE_HEADERS);
-  } catch {
-    logRequest(req, 500, patchStart, userId);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      logRequest(req, 401, patchStart);
+      return unauthorizedError();
+    }
+    logRequest(req, 500, patchStart);
     return serverError("Failed to update profile");
   }
 }

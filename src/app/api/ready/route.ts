@@ -31,8 +31,8 @@ export async function GET() {
     "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   ];
 
-  const missingEnv = requiredEnv.filter((key) => !process.env[key]);
-  checks.env = missingEnv.length === 0 ? "ok" : "fail";
+  const missingCount = requiredEnv.filter((key) => !process.env[key]).length;
+  checks.env = missingCount === 0 ? "ok" : "fail";
 
   const ready = Object.values(checks).every((v) => v === "ok");
 
@@ -40,7 +40,7 @@ export async function GET() {
     {
       ready,
       checks,
-      ...(missingEnv.length > 0 && { missingEnv }),
+      ...(missingCount > 0 && { missingEnvCount: missingCount }),
       timestamp: new Date().toISOString(),
     },
     {

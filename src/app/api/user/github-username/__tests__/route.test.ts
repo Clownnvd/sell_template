@@ -2,14 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { prismaMock } from "@/test/mocks/prisma";
 
-// Mock auth
-const mockGetSession = vi.fn();
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: (...args: unknown[]) => mockGetSession(...args),
-    },
-  },
+// Mock auth/server — requireAuth() used by route
+const mockRequireAuth = vi.fn();
+vi.mock("@/lib/auth/server", () => ({
+  requireAuth: () => mockRequireAuth(),
+  getServerSession: vi.fn(),
+  getCurrentUser: vi.fn(),
+  requireUserId: vi.fn(),
 }));
 
 // Mock rate limiting (allow all)
@@ -43,7 +42,7 @@ describe("PATCH /api/user/github-username", () => {
   });
 
   it("returns 401 when not authenticated", async () => {
-    mockGetSession.mockResolvedValue(null);
+    mockRequireAuth.mockRejectedValue(new Error("Unauthorized: Authentication required"));
 
     const { PATCH } = await import("../route");
     const req = new NextRequest("http://localhost/api/user/github-username", {
@@ -73,7 +72,7 @@ describe("PATCH /api/user/github-username", () => {
   });
 
   it("returns 400 for invalid GitHub username", async () => {
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
 
@@ -91,7 +90,7 @@ describe("PATCH /api/user/github-username", () => {
   });
 
   it("updates username and sends invite on valid request", async () => {
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.user.update.mockResolvedValue({ id: "user_1", githubUsername: "validuser" });
@@ -120,7 +119,7 @@ describe("PATCH /api/user/github-username", () => {
   });
 
   it("rejects XSS attempt in username", async () => {
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
 

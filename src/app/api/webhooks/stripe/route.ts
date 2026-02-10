@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePathWithLog } from "@/lib/cache-utils";
+import { revalidatePathWithLog, revalidateTagWithLog } from "@/lib/cache-utils";
 import Stripe from "stripe";
 import { stripe } from "@/lib/payment/stripe";
 import prisma from "@/lib/db";
@@ -150,6 +150,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     await tryInviteCollaborator(purchase.id, user.githubUsername);
   }
 
+  revalidateTagWithLog(`purchase-${userId}`, "stripe-webhook:checkout-completed");
   revalidatePathWithLog("/dashboard", "stripe-webhook:checkout-completed");
 }
 

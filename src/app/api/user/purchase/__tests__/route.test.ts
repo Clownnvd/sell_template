@@ -2,14 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { prismaMock } from "@/test/mocks/prisma";
 
-// Mock auth
-const mockGetSession = vi.fn();
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: (...args: unknown[]) => mockGetSession(...args),
-    },
-  },
+// Mock auth/server — requireAuth() used by route
+const mockRequireAuth = vi.fn();
+vi.mock("@/lib/auth/server", () => ({
+  requireAuth: () => mockRequireAuth(),
+  getServerSession: vi.fn(),
+  getCurrentUser: vi.fn(),
+  requireUserId: vi.fn(),
 }));
 
 // Mock rate limiting (allow all)
@@ -33,7 +32,7 @@ describe("GET /api/user/purchase", () => {
   });
 
   it("returns 401 when not authenticated", async () => {
-    mockGetSession.mockResolvedValue(null);
+    mockRequireAuth.mockRejectedValue(new Error("Unauthorized: Authentication required"));
 
     const { GET } = await import("../route");
     const req = new NextRequest("http://localhost/api/user/purchase");
@@ -47,7 +46,7 @@ describe("GET /api/user/purchase", () => {
 
   it("returns purchase data for authenticated user with purchase", async () => {
     const purchasedAt = new Date("2025-01-15T10:00:00Z");
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.purchase.findUnique.mockResolvedValue({
@@ -73,7 +72,7 @@ describe("GET /api/user/purchase", () => {
   });
 
   it("returns purchased=false when user has no purchase", async () => {
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.purchase.findUnique.mockResolvedValue(null);

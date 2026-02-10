@@ -142,7 +142,7 @@
         },
         "security": {
           "title": "Bảo mật mặc định",
-          "description": "Server-first patterns, protected routes và middleware configuration hợp lý."
+          "description": "Server-first patterns, protected routes và proxy configuration hợp lý."
         },
         "growth": {
           "title": "Sẵn sàng mở rộng",

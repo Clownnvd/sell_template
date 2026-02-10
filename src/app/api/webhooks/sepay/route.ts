@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePathWithLog } from "@/lib/cache-utils";
+import { revalidatePathWithLog, revalidateTagWithLog } from "@/lib/cache-utils";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { verifySepayWebhook, processSepayTransaction } from "@/lib/payment/sepay-service";
 import prisma from "@/lib/db";
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await processSepayTransaction({
+    const result = await processSepayTransaction({
       id: transaction.id,
       transferType: transaction.transferType,
       transferAmount: transaction.transferAmount,
@@ -92,6 +92,9 @@ export async function POST(req: NextRequest) {
     });
 
     await markEventProcessed(eventId);
+    if (result.userId) {
+      revalidateTagWithLog(`purchase-${result.userId}`, "sepay-webhook:transaction-completed");
+    }
     revalidatePathWithLog("/dashboard", "sepay-webhook:transaction-completed");
     return NextResponse.json({ success: true });
   } catch (error) {

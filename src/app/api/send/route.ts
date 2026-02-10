@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     logRequest(req, 200, start, session.user.id);
-    return successResponse(data, 200, NO_CACHE_HEADERS);
+    return successResponse({ sent: true, id: data?.id }, 200, NO_CACHE_HEADERS);
   } catch {
     logRequest(req, 500, start, session.user.id);
     return serverError("Failed to send email");

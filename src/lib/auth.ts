@@ -110,6 +110,11 @@ export const auth = betterAuth({
           });
         },
       },
+      delete: {
+        after: async (session) => {
+          logAuthEvent("sign_out", session.userId);
+        },
+      },
     },
     account: {
       create: {

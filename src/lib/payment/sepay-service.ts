@@ -132,7 +132,7 @@ export async function processSepayTransaction(transaction: {
   transferAmount: number;
   content: string;
   referenceCode: string;
-}): Promise<{ matched: boolean; purchaseId?: string }> {
+}): Promise<{ matched: boolean; purchaseId?: string; userId?: string }> {
   // Only process incoming transfers
   if (transaction.transferType !== "in") {
     return { matched: false };
@@ -160,7 +160,7 @@ export async function processSepayTransaction(transaction: {
 
   // Already completed — idempotent
   if (purchase.status === "COMPLETED") {
-    return { matched: true, purchaseId: purchase.id };
+    return { matched: true, purchaseId: purchase.id, userId: purchase.user.id };
   }
 
   // Must be PENDING
@@ -201,7 +201,7 @@ export async function processSepayTransaction(transaction: {
     }
   }
 
-  return { matched: true, purchaseId: updatedPurchase.id };
+  return { matched: true, purchaseId: updatedPurchase.id, userId: purchase.user.id };
 }
 
 /**

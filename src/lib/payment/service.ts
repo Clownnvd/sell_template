@@ -1,3 +1,4 @@
+import { cacheTag, cacheLife } from "next/cache";
 import { stripe } from "./stripe";
 import prisma from "@/lib/db";
 import { product } from "@/config/product";
@@ -76,9 +77,13 @@ export async function createCheckoutSession({
 }
 
 /**
- * Get user's purchase record
+ * Get user's purchase record (cached, invalidated on purchase)
  */
 export async function getPurchase(userId: string) {
+  "use cache";
+  cacheTag(`purchase-${userId}`);
+  cacheLife("hours");
+
   return prisma.purchase.findFirst({
     where: { userId, status: "COMPLETED" },
     select: {
@@ -96,9 +101,13 @@ export async function getPurchase(userId: string) {
 }
 
 /**
- * Check if user has purchased the template
+ * Check if user has purchased the template (cached, invalidated on purchase)
  */
 export async function hasPurchased(userId: string): Promise<boolean> {
+  "use cache";
+  cacheTag(`purchase-${userId}`);
+  cacheLife("hours");
+
   const purchase = await prisma.purchase.findFirst({
     where: { userId, status: "COMPLETED" },
     select: { id: true },

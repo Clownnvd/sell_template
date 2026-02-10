@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { revalidatePathWithLog } from "@/lib/cache-utils";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth/server";
 import prisma from "@/lib/db";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { verifyCsrf } from "@/lib/csrf";
@@ -35,35 +35,32 @@ export async function PATCH(req: NextRequest) {
   const ctCheck = requireJsonBody(req);
   if (ctCheck) return ctCheck;
 
-  const session = await auth.api.getSession({ headers: req.headers });
-  const userId = session?.user?.id;
-  if (!userId) {
-    return unauthorizedError();
-  }
-
-  const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "github-username", userId);
-  if (rateLimitResult) return rateLimitResult;
-
-  let body: unknown;
   try {
-    body = await req.json();
-  } catch {
-    return errorResponse("Invalid JSON body", 400, undefined, ErrorCodes.VALIDATION_ERROR);
-  }
+    const session = await requireAuth();
+    const userId = session.user.id;
 
-  const parseResult = updateGithubUsernameSchema.safeParse(body);
-  if (!parseResult.success) {
-    return errorResponse(
-      "Validation failed",
-      400,
-      parseResult.error.flatten().fieldErrors as Record<string, string[]>,
-      ErrorCodes.VALIDATION_ERROR
-    );
-  }
+    const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "github-username", userId);
+    if (rateLimitResult) return rateLimitResult;
 
-  const { githubUsername } = parseResult.data;
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, undefined, ErrorCodes.VALIDATION_ERROR);
+    }
 
-  try {
+    const parseResult = updateGithubUsernameSchema.safeParse(body);
+    if (!parseResult.success) {
+      return errorResponse(
+        "Validation failed",
+        400,
+        parseResult.error.flatten().fieldErrors as Record<string, string[]>,
+        ErrorCodes.VALIDATION_ERROR
+      );
+    }
+
+    const { githubUsername } = parseResult.data;
+
     await prisma.user.update({
       where: { id: userId },
       data: { githubUsername },
@@ -98,8 +95,12 @@ export async function PATCH(req: NextRequest) {
 
     logRequest(req, 200, start, userId);
     return successResponse({ githubUsername, invite: inviteResult }, 200, NO_CACHE_HEADERS);
-  } catch {
-    logRequest(req, 500, start, userId);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      logRequest(req, 401, start);
+      return unauthorizedError();
+    }
+    logRequest(req, 500, start);
     return serverError("Failed to update GitHub username");
   }
 }

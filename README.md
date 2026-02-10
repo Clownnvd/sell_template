@@ -279,7 +279,7 @@ king-template/
 │   │   ├── github/              # GitHub collaborator invite service
 │   │   └── validations/         # Zod schemas
 │   ├── messages/                # 🗂️ Translation files (en.json, vi.json)
-│   └── middleware.ts            # 🛡️ Security middleware (CSP, rate limiting, CSRF)
+│   └── proxy.ts                # 🛡️ Security proxy (CSP, rate limiting, CSRF)
 ├── .env.local                   # Environment variables (not committed)
 ├── next.config.js               # Next.js configuration
 ├── tailwind.config.ts           # Tailwind CSS configuration

@@ -95,7 +95,7 @@ describe("POST /api/webhooks/sepay", () => {
   it("processes valid transaction successfully", async () => {
     mockVerifySepayWebhook.mockReturnValue(true);
     prismaMock.webhookEvent.findUnique.mockResolvedValue(null);
-    mockProcessSepayTransaction.mockResolvedValue(undefined);
+    mockProcessSepayTransaction.mockResolvedValue({ matched: true, purchaseId: "p_1", userId: "u_1" });
     prismaMock.webhookEvent.create.mockResolvedValue({});
 
     const { POST } = await import("../route");

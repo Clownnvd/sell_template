@@ -16,6 +16,12 @@ export const ErrorCodes = {
   SERVER_ERROR: "SERVER_ERROR",
 } as const;
 
+/** Cache headers for API responses — prevents proxy/browser caching of user data */
+export const NO_CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
+
+/** Max request body size in bytes (1 MB) */
+const MAX_BODY_SIZE = 1_048_576;
+
 export function successResponse<T>(
   data: T,
   status = 200,
@@ -43,7 +49,7 @@ export function errorResponse(
       code,
       errors,
     },
-    { status }
+    { status, headers: NO_CACHE_HEADERS }
   );
 }
 
@@ -77,9 +83,6 @@ export function serverError(message = "Internal server error"): NextResponse<Api
   return errorResponse(message, 500, undefined, ErrorCodes.SERVER_ERROR);
 }
 
-/** Cache headers for authenticated API responses — prevents proxy/browser caching of user data */
-export const NO_CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
-
 /** Reject requests that don't send application/json Content-Type */
 export function requireJsonBody(req: NextRequest): NextResponse | null {
   const contentType = req.headers.get("content-type");
@@ -91,5 +94,12 @@ export function requireJsonBody(req: NextRequest): NextResponse | null {
       ErrorCodes.UNSUPPORTED_MEDIA_TYPE
     );
   }
+
+  // Reject oversized bodies via Content-Length header check
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_SIZE) {
+    return errorResponse("Request body too large", 413);
+  }
+
   return null;
 }

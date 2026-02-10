@@ -2,14 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { prismaMock } from "@/test/mocks/prisma";
 
-// Mock auth
-const mockGetSession = vi.fn();
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: (...args: unknown[]) => mockGetSession(...args),
-    },
-  },
+// Mock auth/server — requireAuth() used by route
+const mockRequireAuth = vi.fn();
+vi.mock("@/lib/auth/server", () => ({
+  requireAuth: () => mockRequireAuth(),
+  getServerSession: vi.fn(),
+  getCurrentUser: vi.fn(),
+  requireUserId: vi.fn(),
 }));
 
 // Mock rate limiting (allow all)
@@ -38,7 +37,7 @@ describe("GET /api/user/profile", () => {
   });
 
   it("returns 401 when not authenticated", async () => {
-    mockGetSession.mockResolvedValue(null);
+    mockRequireAuth.mockRejectedValue(new Error("Unauthorized: Authentication required"));
 
     const { GET } = await import("../route");
     const req = new NextRequest("http://localhost/api/user/profile");
@@ -51,7 +50,7 @@ describe("GET /api/user/profile", () => {
   });
 
   it("returns 404 when user not found in DB", async () => {
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.user.findUnique.mockResolvedValue(null);
@@ -67,7 +66,7 @@ describe("GET /api/user/profile", () => {
 
   it("returns user profile for authenticated user", async () => {
     const createdAt = new Date("2025-01-01T00:00:00Z");
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.user.findUnique.mockResolvedValue({
@@ -97,7 +96,7 @@ describe("PATCH /api/user/profile", () => {
   });
 
   it("returns 401 when not authenticated", async () => {
-    mockGetSession.mockResolvedValue(null);
+    mockRequireAuth.mockRejectedValue(new Error("Unauthorized: Authentication required"));
 
     const { PATCH } = await import("../route");
     const req = new NextRequest("http://localhost/api/user/profile", {
@@ -127,7 +126,7 @@ describe("PATCH /api/user/profile", () => {
   });
 
   it("returns 400 for invalid body", async () => {
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
 
@@ -144,7 +143,7 @@ describe("PATCH /api/user/profile", () => {
 
   it("updates profile successfully", async () => {
     const createdAt = new Date("2025-01-01T00:00:00Z");
-    mockGetSession.mockResolvedValue({
+    mockRequireAuth.mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
     });
     prismaMock.user.update.mockResolvedValue({

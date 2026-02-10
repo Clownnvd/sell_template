@@ -295,7 +295,7 @@ function checkFileStructure() {
     { filePath: "src/lib/env.ts", type: "file", desc: "Env validation" },
     { filePath: "src/lib/csrf.ts", type: "file", desc: "CSRF protection" },
     { filePath: "src/lib/rate-limit.ts", type: "file", desc: "Rate limiter" },
-    { filePath: "src/middleware.ts", type: "file", desc: "Auth middleware" },
+    { filePath: "src/proxy.ts", type: "file", desc: "Auth proxy" },
     { filePath: "src/i18n/config.ts", type: "file", desc: "i18n config" },
     { filePath: "src/messages/en.json", type: "file", desc: "English translations" },
     { filePath: "src/messages/vi.json", type: "file", desc: "Vietnamese translations" },

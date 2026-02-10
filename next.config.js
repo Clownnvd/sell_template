@@ -7,16 +7,21 @@ const nextConfig = {
   reactCompiler: true,
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  experimental: {
-    // Externalize Prisma from server bundle for smaller output
-    serverExternalPackages: ["@prisma/client"],
-  },
+  // Externalize Prisma from server bundle for smaller output
+  serverExternalPackages: ["@prisma/client"],
   async headers() {
     return [
       {
         source: "/api/:path*",
         headers: [
           { key: "Vary", value: "Cookie" },
+        ],
+      },
+      // CDN-friendly stale-while-revalidate for landing page
+      {
+        source: "/",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
         ],
       },
       // CDN-friendly immutable cache for static assets

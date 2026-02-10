@@ -142,7 +142,7 @@
         },
         "security": {
           "title": "Secure by default",
-          "description": "Server-first patterns, protected routes, and sensible middleware configuration."
+          "description": "Server-first patterns, protected routes, and sensible proxy configuration."
         },
         "growth": {
           "title": "Ready for growth",
