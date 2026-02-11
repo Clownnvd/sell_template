@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { logAuthEvent } from "@/lib/auth/audit-log";
+import { Redis } from "@upstash/redis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,10 +13,12 @@ const { POST: authPost, GET: authGet } = toNextJsHandler(auth);
 /**
  * Account lockout: Track consecutive failed login attempts per IP.
  * After MAX_FAILURES within WINDOW_MS, block for LOCKOUT_MS.
+ * Uses Redis (Upstash) in production, falls back to in-memory for development.
  */
 const MAX_FAILURES = 10;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const LOCKOUT_MS = 30 * 60 * 1000; // 30 minutes
+const LOCKOUT_PREFIX = "auth:lockout:";
 
 interface LockoutEntry {
   failures: number;
@@ -23,10 +26,19 @@ interface LockoutEntry {
   lockedUntil: number | null;
 }
 
+// Redis client for distributed lockout (shared across instances)
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
+
+// In-memory fallback for development
 const lockoutStore = new Map<string, LockoutEntry>();
 
-// Clean up expired entries every 5 minutes
-if (typeof setInterval !== "undefined") {
+// Clean up expired in-memory entries every 5 minutes (only when no Redis)
+if (typeof setInterval !== "undefined" && !redis) {
   setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of lockoutStore.entries()) {
@@ -38,6 +50,38 @@ if (typeof setInterval !== "undefined") {
   }, 5 * 60 * 1000);
 }
 
+async function getLockoutEntry(ip: string): Promise<LockoutEntry | null> {
+  if (redis) {
+    try {
+      return await redis.get<LockoutEntry>(`${LOCKOUT_PREFIX}${ip}`);
+    } catch { /* fall through to in-memory */ }
+  }
+  return lockoutStore.get(ip) ?? null;
+}
+
+async function setLockoutEntry(ip: string, entry: LockoutEntry): Promise<void> {
+  if (redis) {
+    try {
+      const ttlMs = entry.lockedUntil
+        ? Math.max(entry.lockedUntil - Date.now(), 1000)
+        : WINDOW_MS;
+      await redis.set(`${LOCKOUT_PREFIX}${ip}`, entry, { px: ttlMs });
+      return;
+    } catch { /* fall through to in-memory */ }
+  }
+  lockoutStore.set(ip, entry);
+}
+
+async function deleteLockoutEntry(ip: string): Promise<void> {
+  if (redis) {
+    try {
+      await redis.del(`${LOCKOUT_PREFIX}${ip}`);
+      return;
+    } catch { /* fall through to in-memory */ }
+  }
+  lockoutStore.delete(ip);
+}
+
 function getClientIP(req: NextRequest): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
@@ -47,33 +91,32 @@ function getClientIP(req: NextRequest): string {
   return req.headers.get("x-real-ip") ?? "unknown";
 }
 
-function isLockedOut(ip: string): boolean {
-  const entry = lockoutStore.get(ip);
+async function isLockedOut(ip: string): Promise<boolean> {
+  const entry = await getLockoutEntry(ip);
   if (!entry?.lockedUntil) return false;
   if (entry.lockedUntil > Date.now()) return true;
-  // Lockout expired — clean up
-  lockoutStore.delete(ip);
+  await deleteLockoutEntry(ip);
   return false;
 }
 
-function recordFailure(ip: string): void {
+async function recordFailure(ip: string): Promise<void> {
   const now = Date.now();
-  const entry = lockoutStore.get(ip);
+  const entry = await getLockoutEntry(ip);
 
   if (!entry || entry.firstFailureAt + WINDOW_MS < now) {
-    lockoutStore.set(ip, { failures: 1, firstFailureAt: now, lockedUntil: null });
+    await setLockoutEntry(ip, { failures: 1, firstFailureAt: now, lockedUntil: null });
     return;
   }
 
-  const updated = { ...entry, failures: entry.failures + 1 };
+  const updated = { ...entry, failures: entry.failures + 1, lockedUntil: entry.lockedUntil };
   if (updated.failures >= MAX_FAILURES) {
     updated.lockedUntil = now + LOCKOUT_MS;
   }
-  lockoutStore.set(ip, updated);
+  await setLockoutEntry(ip, updated);
 }
 
-function clearFailures(ip: string): void {
-  lockoutStore.delete(ip);
+async function clearFailures(ip: string): Promise<void> {
+  await deleteLockoutEntry(ip);
 }
 
 function isSignInPath(pathname: string): boolean {
@@ -88,7 +131,7 @@ export async function POST(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   // Account lockout check for sign-in attempts
-  if (isSignInPath(pathname) && isLockedOut(ip)) {
+  if (isSignInPath(pathname) && await isLockedOut(ip)) {
     logAuthEvent("login_failed", "unknown", { ip });
     return new Response(
       JSON.stringify({ success: false, error: "Account temporarily locked. Try again later." }),
@@ -101,18 +144,18 @@ export async function POST(req: NextRequest) {
   // Track login failures for sign-in requests
   if (isSignInPath(pathname)) {
     if (response.status !== 200) {
-      recordFailure(ip);
+      await recordFailure(ip);
       logAuthEvent("login_failed", "unknown", { ip });
     } else {
-      clearFailures(ip);
+      await clearFailures(ip);
     }
   }
 
-  return response;
+  return addRateLimitHeaders(req, response);
 }
 
 export async function GET(req: NextRequest) {
   const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "auth-get");
   if (rateLimitResult) return rateLimitResult;
-  return authGet(req);
+  return addRateLimitHeaders(req, await authGet(req));
 }

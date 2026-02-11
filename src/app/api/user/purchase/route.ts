@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/server";
 import prisma from "@/lib/db";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { successResponse, unauthorizedError, serverError, NO_CACHE_HEADERS } from "@/lib/api/response";
 import { logRequest } from "@/lib/api/logger";
 
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const completedPurchase = purchase?.status === "COMPLETED" ? purchase : null;
 
     logRequest(req, 200, start, userId);
-    return successResponse({
+    return addRateLimitHeaders(req, successResponse({
       purchased: !!completedPurchase,
       purchase: completedPurchase
         ? {
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
             purchasedAt: completedPurchase.purchasedAt?.toISOString() ?? null,
           }
         : null,
-    }, 200, NO_CACHE_HEADERS);
+    }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, start);

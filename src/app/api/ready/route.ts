@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   const ready = Object.values(checks).every((v) => v === "ok");
 
-  return NextResponse.json(
+  return addRateLimitHeaders(req, NextResponse.json(
     {
       ready,
       checks,
@@ -54,5 +54,5 @@ export async function GET(req: NextRequest) {
       status: ready ? 200 : 503,
       headers: { "Cache-Control": "public, max-age=5, s-maxage=5" },
     }
-  );
+  ));
 }

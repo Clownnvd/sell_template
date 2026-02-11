@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { revalidatePathWithLog, revalidateTagWithLog } from "@/lib/cache-utils";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { verifySepayWebhook, processSepayTransaction } from "@/lib/payment/sepay-service";
 import prisma from "@/lib/db";
 import { logger } from "@/lib/api/logger";
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       revalidateTagWithLog(`purchase-${result.userId}`, "sepay-webhook:transaction-completed");
     }
     revalidatePathWithLog("/dashboard", "sepay-webhook:transaction-completed");
-    return NextResponse.json({ success: true });
+    return addRateLimitHeaders(req, NextResponse.json({ success: true }));
   } catch (error) {
     logger.error("sepay_webhook_processing_failed", {
       eventId,

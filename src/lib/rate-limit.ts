@@ -77,6 +77,23 @@ if (typeof setInterval !== "undefined" && !redis) {
   }, 60000);
 }
 
+// Track rate limit metadata for successful (non-blocked) requests
+const rateLimitInfoMap = new WeakMap<NextRequest, { limit: number; remaining: number; reset: number }>();
+
+/**
+ * Add rate limit headers to a response (call after rateLimit check passes).
+ * Reads metadata stored by the preceding rateLimit() call for this request.
+ */
+export function addRateLimitHeaders<T extends Response>(req: NextRequest, response: T): T {
+  const info = rateLimitInfoMap.get(req);
+  if (info) {
+    response.headers.set("X-RateLimit-Limit", String(info.limit));
+    response.headers.set("X-RateLimit-Remaining", String(Math.max(0, info.remaining)));
+    response.headers.set("X-RateLimit-Reset", String(Math.ceil(info.reset / 1000)));
+  }
+  return response;
+}
+
 function getClientIP(req: NextRequest): string {
   // Use rightmost IP (set by proxy/load balancer, not spoofable by client)
   const forwarded = req.headers.get("x-forwarded-for");
@@ -148,6 +165,7 @@ export async function rateLimit(
         );
       }
 
+      rateLimitInfoMap.set(req, { limit, remaining, reset });
       return null; // Allow request
     } catch {
       // If Redis fails, fall back to in-memory
@@ -159,10 +177,12 @@ export async function rateLimit(
   const entry = inMemoryStore.get(key);
 
   if (!entry || entry.resetAt < now) {
+    const resetAt = now + config.interval;
     inMemoryStore.set(key, {
       count: 1,
-      resetAt: now + config.interval,
+      resetAt,
     });
+    rateLimitInfoMap.set(req, { limit: config.maxRequests, remaining: config.maxRequests - 1, reset: resetAt });
     return null;
   }
 
@@ -198,6 +218,7 @@ export async function rateLimit(
     ...entry,
     count: entry.count + 1,
   });
+  rateLimitInfoMap.set(req, { limit: config.maxRequests, remaining: config.maxRequests - entry.count - 1, reset: entry.resetAt });
   return null;
 }
 
@@ -227,6 +248,7 @@ export function withRateLimit<T extends (req: NextRequest, ...args: unknown[]) =
   return (async (req: NextRequest, ...args: unknown[]) => {
     const rateLimitResult = await rateLimit(req, config, identifier);
     if (rateLimitResult) return rateLimitResult;
-    return handler(req, ...args);
+    const response = await handler(req, ...args);
+    return addRateLimitHeaders(req, response);
   }) as T;
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     await prisma.$queryRaw`SELECT 1`;
     const latencyMs = Date.now() - start;
 
-    return NextResponse.json(
+    return addRateLimitHeaders(req, NextResponse.json(
       {
         status: "healthy",
         database: "connected",
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       {
         headers: { "Cache-Control": "public, max-age=5, s-maxage=5" },
       }
-    );
+    ));
   } catch {
     const latencyMs = Date.now() - start;
 

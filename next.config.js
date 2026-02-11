@@ -18,6 +18,13 @@ const nextConfig = {
           { key: "Vary", value: "Cookie" },
         ],
       },
+      // Webhook responses must never be cached by proxies
+      {
+        source: "/api/webhooks/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store" },
+        ],
+      },
       // CDN-friendly stale-while-revalidate for landing page
       {
         source: "/",

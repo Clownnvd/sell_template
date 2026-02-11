@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { logger } from "@/lib/api/logger";
 
 export const runtime = "nodejs";
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       documentUri: report["document-uri"] ?? report.documentURL,
     });
 
-    return NextResponse.json({ received: true }, { status: 204 });
+    return addRateLimitHeaders(req, NextResponse.json({ received: true }, { status: 204 }));
   } catch {
     return NextResponse.json({ received: false }, { status: 400 });
   }

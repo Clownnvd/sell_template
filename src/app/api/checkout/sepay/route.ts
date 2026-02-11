@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/server";
 import { verifyCsrf } from "@/lib/csrf";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import {
   createSepayPurchase,
   getSepayPurchaseStatus,
@@ -38,14 +38,14 @@ export async function POST(req: NextRequest) {
     const result = await createSepayPurchase(session.user.id);
 
     logRequest(req, 200, start);
-    return successResponse({
+    return addRateLimitHeaders(req, successResponse({
       paymentCode: result.paymentCode,
       amount: result.amount,
       qrUrl: result.qrUrl,
       bankAccount: result.bankAccount,
       bankCode: result.bankCode,
       expiresAt: result.expiresAt.toISOString(),
-    }, 200, NO_CACHE_HEADERS);
+    }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Unauthorized")) {
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
     }
 
     logRequest(req, 200, getStart);
-    return successResponse(status, 200, NO_CACHE_HEADERS);
+    return addRateLimitHeaders(req, successResponse(status, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, getStart);

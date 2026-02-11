@@ -82,51 +82,55 @@ export async function createSepayPurchase(userId: string): Promise<{
     throw new Error("SePay payment not configured");
   }
 
-  // Check for existing completed purchase
-  const existingPurchase = await prisma.purchase.findFirst({
-    where: { userId, status: "COMPLETED" },
+  // Use transaction to prevent race conditions (check + cancel + create)
+  const result = await prisma.$transaction(async (tx) => {
+    const existingPurchase = await tx.purchase.findFirst({
+      where: { userId, status: "COMPLETED" },
+      select: { id: true },
+    });
+
+    if (existingPurchase) {
+      throw new Error("You have already purchased this product");
+    }
+
+    await tx.purchase.updateMany({
+      where: {
+        userId,
+        paymentMethod: "SEPAY",
+        status: "PENDING",
+      },
+      data: { status: "REFUNDED" },
+    });
+
+    const code = generatePaymentCode();
+    const amt = product.priceVND;
+    const expires = new Date(Date.now() + PAYMENT_EXPIRY_MINUTES * 60 * 1000);
+
+    const newPurchase = await tx.purchase.create({
+      data: {
+        userId,
+        paymentMethod: "SEPAY",
+        paymentCode: code,
+        productType: "KING_TEMPLATE",
+        amount: amt,
+        currency: "VND",
+        status: "PENDING",
+        expiresAt: expires,
+      },
+    });
+
+    return {
+      purchaseId: newPurchase.id,
+      paymentCode: code,
+      amount: amt,
+      qrUrl: generateQRUrl({ amount: amt, paymentCode: code }),
+      bankAccount,
+      bankCode,
+      expiresAt: expires,
+    };
   });
 
-  if (existingPurchase) {
-    throw new Error("You have already purchased this product");
-  }
-
-  // Cancel any existing pending SePay purchases for this user
-  await prisma.purchase.updateMany({
-    where: {
-      userId,
-      paymentMethod: "SEPAY",
-      status: "PENDING",
-    },
-    data: { status: "REFUNDED" },
-  });
-
-  const paymentCode = generatePaymentCode();
-  const amount = product.priceVND;
-  const expiresAt = new Date(Date.now() + PAYMENT_EXPIRY_MINUTES * 60 * 1000);
-
-  const purchase = await prisma.purchase.create({
-    data: {
-      userId,
-      paymentMethod: "SEPAY",
-      paymentCode,
-      productType: "KING_TEMPLATE",
-      amount,
-      currency: "VND",
-      status: "PENDING",
-      expiresAt,
-    },
-  });
-
-  return {
-    purchaseId: purchase.id,
-    paymentCode,
-    amount,
-    qrUrl: generateQRUrl({ amount, paymentCode }),
-    bankAccount,
-    bankCode,
-    expiresAt,
-  };
+  return result;
 }
 
 /**
@@ -158,7 +162,12 @@ export async function processSepayTransaction(transaction: {
   // Find the pending purchase
   const purchase = await prisma.purchase.findUnique({
     where: { paymentCode },
-    include: { user: { select: { id: true, githubUsername: true } } },
+    select: {
+      id: true,
+      status: true,
+      amount: true,
+      user: { select: { id: true, githubUsername: true } },
+    },
   });
 
   if (!purchase) {

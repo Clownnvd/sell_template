@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { WelcomeEmail } from "@/lib/email/templates/email-template";
 import { Resend } from "resend";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/auth/server";
 import { verifyCsrf } from "@/lib/csrf";
 import {
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     logRequest(req, 200, start, session.user.id);
-    return successResponse({ sent: true, id: data?.id }, 200, NO_CACHE_HEADERS);
+    return addRateLimitHeaders(req, successResponse({ sent: true, id: data?.id }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, start);

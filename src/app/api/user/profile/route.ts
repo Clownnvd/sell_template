@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { revalidatePathWithLog } from "@/lib/cache-utils";
 import { requireAuth } from "@/lib/auth/server";
 import prisma from "@/lib/db";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { updateProfileSchema } from "@/lib/validations/profile";
 import { verifyCsrf } from "@/lib/csrf";
 import { successResponse, unauthorizedError, notFoundError, errorResponse, serverError, requireJsonBody, ErrorCodes, NO_CACHE_HEADERS } from "@/lib/api/response";
@@ -45,14 +45,14 @@ export async function GET(req: NextRequest) {
     }
 
     logRequest(req, 200, start, userId);
-    return successResponse({
+    return addRateLimitHeaders(req, successResponse({
       id: user.id,
       name: user.name,
       email: user.email,
       avatarUrl: user.image,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt.toISOString(),
-    }, 200, NO_CACHE_HEADERS);
+    }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, start);
@@ -118,14 +118,14 @@ export async function PATCH(req: NextRequest) {
     revalidatePathWithLog("/dashboard/settings/profile", "profile-api:update");
 
     logRequest(req, 200, patchStart, userId);
-    return successResponse({
+    return addRateLimitHeaders(req, successResponse({
       id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
       avatarUrl: updatedUser.image,
       emailVerified: updatedUser.emailVerified,
       createdAt: updatedUser.createdAt.toISOString(),
-    }, 200, NO_CACHE_HEADERS);
+    }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, patchStart);

@@ -6,6 +6,7 @@ import { stripeMock } from "@/test/mocks/stripe";
 // Mock rate limiting (allow all)
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn().mockResolvedValue(null),
+  addRateLimitHeaders: vi.fn((_req: unknown, res: unknown) => res),
   rateLimitPresets: {
     webhook: { interval: 60000, maxRequests: 100 },
   },

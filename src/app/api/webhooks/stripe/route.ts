@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { stripe } from "@/lib/payment/stripe";
 import prisma from "@/lib/db";
 import { inviteCollaborator } from "@/lib/github/invite";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/api/logger";
 import { logAuthEvent } from "@/lib/auth/audit-log";
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     await markEventProcessed(event.id, event.type);
-    return NextResponse.json({ received: true });
+    return addRateLimitHeaders(req, NextResponse.json({ received: true }));
   } catch {
     // Return 500 so Stripe retries the webhook
     return NextResponse.json({ received: false }, { status: 500 });

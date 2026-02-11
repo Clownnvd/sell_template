@@ -1,11 +1,12 @@
 import { Resend } from "resend";
 import prisma from "@/lib/db";
+import { serverEnv } from "@/lib/env";
 import { WelcomeEmail } from "./templates/email-template";
 import { VerifyEmailTemplate } from "./templates/verify-email";
 import { ResetPasswordTemplate } from "./templates/reset-password";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.RESEND_FROM || "noreply@example.com";
+const resend = new Resend(serverEnv.RESEND_API_KEY);
+const FROM_EMAIL = serverEnv.RESEND_FROM || "noreply@example.com";
 
 type EmailResult = {
   success: boolean;

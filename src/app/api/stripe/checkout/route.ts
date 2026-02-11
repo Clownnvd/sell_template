@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/server";
 import { createCheckoutSession } from "@/lib/payment/service";
 import { createCheckoutSchema } from "@/lib/validations/billing";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { verifyCsrf } from "@/lib/csrf";
 import {
   successResponse,
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     }
 
     logRequest(req, 200, start);
-    return successResponse({ url: checkoutSession.url }, 200, NO_CACHE_HEADERS);
+    return addRateLimitHeaders(req, successResponse({ url: checkoutSession.url }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("Unauthorized")) {

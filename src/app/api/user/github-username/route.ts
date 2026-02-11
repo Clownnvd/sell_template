@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { revalidatePathWithLog } from "@/lib/cache-utils";
 import { requireAuth } from "@/lib/auth/server";
 import prisma from "@/lib/db";
-import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
+import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { verifyCsrf } from "@/lib/csrf";
 import { updateGithubUsernameSchema } from "@/lib/validations/github";
 import { inviteCollaborator } from "@/lib/github/invite";
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest) {
     revalidatePathWithLog("/dashboard", "github-username:update");
 
     logRequest(req, 200, start, userId);
-    return successResponse({ githubUsername, invite: inviteResult }, 200, NO_CACHE_HEADERS);
+    return addRateLimitHeaders(req, successResponse({ githubUsername, invite: inviteResult }, 200, NO_CACHE_HEADERS));
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) {
       logRequest(req, 401, start);

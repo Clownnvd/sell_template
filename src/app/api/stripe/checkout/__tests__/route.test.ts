@@ -16,6 +16,7 @@ vi.mock("@/lib/payment/service", () => ({
 // Mock rate limiting (allow all)
 vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn().mockResolvedValue(null),
+  addRateLimitHeaders: vi.fn((_req: unknown, res: unknown) => res),
   rateLimitPresets: {
     strict: { interval: 60000, maxRequests: 5 },
   },
