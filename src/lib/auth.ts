@@ -65,6 +65,9 @@ export const auth = betterAuth({
         }),
       });
     },
+    onVerification: async ({ user }: { user: { id: string } }) => {
+      logAuthEvent("email_verified", user.id);
+    },
   },
 
   socialProviders: {
@@ -121,6 +124,13 @@ export const auth = betterAuth({
       create: {
         after: async (account) => {
           logAuthEvent("oauth_link", account.userId, {
+            provider: account.providerId,
+          });
+        },
+      },
+      delete: {
+        after: async (account) => {
+          logAuthEvent("oauth_unlink", account.userId, {
             provider: account.providerId,
           });
         },

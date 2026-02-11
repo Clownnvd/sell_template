@@ -9,6 +9,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
   // Externalize Prisma from server bundle for smaller output
   serverExternalPackages: ["@prisma/client"],
+  experimental: {},
   async headers() {
     return [
       {

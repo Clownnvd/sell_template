@@ -42,13 +42,13 @@ describe("GET /api/ready", () => {
     expect(data.checks.database).toBe("fail");
   });
 
-  it("sets no-store Cache-Control header", async () => {
+  it("sets short-lived public Cache-Control header", async () => {
     prismaMock.$queryRaw.mockResolvedValue([{ "?column?": 1 }]);
 
     const { GET } = await import("../route");
     const req = new NextRequest("http://localhost/api/ready");
     const response = await GET(req);
 
-    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=5, s-maxage=5");
   });
 });

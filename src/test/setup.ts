@@ -1,12 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
-// Mock next/cache — revalidatePath/revalidateTag/cacheTag/cacheLife are server-only
+// Mock next/cache — revalidatePath/revalidateTag/unstable_cache are server-only
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
   cacheTag: vi.fn(),
   cacheLife: vi.fn(),
+  unstable_cache: vi.fn((fn: Function) => fn),
 }));
 
 // Mock cache-utils — wraps next/cache with logging

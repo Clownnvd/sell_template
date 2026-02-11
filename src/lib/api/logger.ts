@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { randomUUID } from "crypto";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -78,9 +79,14 @@ export function logRequest(
     ...(userId && { userId }),
     ip: req.headers.get("x-forwarded-for")?.split(",").pop()?.trim(),
     userAgent: req.headers.get("user-agent")?.slice(0, 100),
-    requestId: req.headers.get("x-request-id") ?? undefined,
+    requestId: req.headers.get("x-request-id") ?? randomUUID(),
     timestamp: new Date().toISOString(),
   };
+
+  // Slow request detection — warn if > 500ms
+  if (duration > 500 && entry.level === "info") {
+    entry.level = "warn";
+  }
 
   writeLog(entry.level, entry as unknown as Record<string, unknown>);
 }

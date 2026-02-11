@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { product } from "@/config/product";
 import { inviteCollaborator } from "@/lib/github/invite";
 import { logAuthEvent } from "@/lib/auth/audit-log";
+import { serverEnv } from "@/lib/env";
 
 const PAYMENT_CODE_PREFIX = "KT";
 const PAYMENT_EXPIRY_MINUTES = 30;
@@ -30,8 +31,8 @@ export function generateQRUrl({
   amount: number;
   paymentCode: string;
 }): string {
-  const bankAccount = process.env.SEPAY_BANK_ACCOUNT;
-  const bankCode = process.env.SEPAY_BANK_CODE;
+  const bankAccount = serverEnv.SEPAY_BANK_ACCOUNT;
+  const bankCode = serverEnv.SEPAY_BANK_CODE;
 
   if (!bankAccount || !bankCode) {
     throw new Error("SePay bank account not configured");
@@ -52,7 +53,7 @@ export function generateQRUrl({
  * Verify SePay webhook API key
  */
 export function verifySepayWebhook(authHeader: string | null): boolean {
-  const webhookKey = process.env.SEPAY_WEBHOOK_KEY;
+  const webhookKey = serverEnv.SEPAY_WEBHOOK_KEY;
   if (!webhookKey) return false;
   if (!authHeader) return false;
 
@@ -74,6 +75,13 @@ export async function createSepayPurchase(userId: string): Promise<{
   bankCode: string;
   expiresAt: Date;
 }> {
+  const bankAccount = serverEnv.SEPAY_BANK_ACCOUNT;
+  const bankCode = serverEnv.SEPAY_BANK_CODE;
+
+  if (!bankAccount || !bankCode) {
+    throw new Error("SePay payment not configured");
+  }
+
   // Check for existing completed purchase
   const existingPurchase = await prisma.purchase.findFirst({
     where: { userId, status: "COMPLETED" },
@@ -109,9 +117,6 @@ export async function createSepayPurchase(userId: string): Promise<{
       expiresAt,
     },
   });
-
-  const bankAccount = process.env.SEPAY_BANK_ACCOUNT!;
-  const bankCode = process.env.SEPAY_BANK_CODE!;
 
   return {
     purchaseId: purchase.id,

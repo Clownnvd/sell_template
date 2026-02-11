@@ -1,4 +1,4 @@
-import { cacheTag, cacheLife } from "next/cache";
+import { unstable_cache } from "next/cache";
 import { stripe } from "./stripe";
 import prisma from "@/lib/db";
 import { product } from "@/config/product";
@@ -77,40 +77,44 @@ export async function createCheckoutSession({
 }
 
 /**
- * Get user's purchase record (cached, invalidated on purchase)
+ * Get user's purchase record (cached, invalidated on purchase via revalidateTag)
  */
 export async function getPurchase(userId: string) {
-  "use cache";
-  cacheTag(`purchase-${userId}`, "purchases");
-  cacheLife("hours");
-
-  return prisma.purchase.findFirst({
-    where: { userId, status: "COMPLETED" },
-    select: {
-      id: true,
-      status: true,
-      productType: true,
-      amount: true,
-      currency: true,
-      githubInviteSent: true,
-      githubUsername: true,
-      purchasedAt: true,
-      createdAt: true,
+  return unstable_cache(
+    async () => {
+      return prisma.purchase.findFirst({
+        where: { userId, status: "COMPLETED" },
+        select: {
+          id: true,
+          status: true,
+          productType: true,
+          amount: true,
+          currency: true,
+          githubInviteSent: true,
+          githubUsername: true,
+          purchasedAt: true,
+          createdAt: true,
+        },
+      });
     },
-  });
+    [`purchase-${userId}`],
+    { revalidate: 3600, tags: [`purchase-${userId}`, "purchases"] },
+  )();
 }
 
 /**
- * Check if user has purchased the template (cached, invalidated on purchase)
+ * Check if user has purchased the template (cached, invalidated on purchase via revalidateTag)
  */
 export async function hasPurchased(userId: string): Promise<boolean> {
-  "use cache";
-  cacheTag(`purchase-${userId}`, "purchases");
-  cacheLife("hours");
-
-  const purchase = await prisma.purchase.findFirst({
-    where: { userId, status: "COMPLETED" },
-    select: { id: true },
-  });
-  return !!purchase;
+  return unstable_cache(
+    async () => {
+      const purchase = await prisma.purchase.findFirst({
+        where: { userId, status: "COMPLETED" },
+        select: { id: true },
+      });
+      return !!purchase;
+    },
+    [`has-purchased-${userId}`],
+    { revalidate: 3600, tags: [`purchase-${userId}`, "purchases"] },
+  )();
 }

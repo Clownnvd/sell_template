@@ -41,7 +41,13 @@ export async function POST(req: NextRequest) {
     const session = await requireAuth();
     const user = session.user;
 
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, undefined, ErrorCodes.VALIDATION_ERROR);
+    }
+
     const validation = createCheckoutSchema.safeParse(body);
 
     if (!validation.success) {
