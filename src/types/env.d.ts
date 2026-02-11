@@ -33,6 +33,10 @@ declare namespace NodeJS {
     SEPAY_BANK_CODE?: string;
     SEPAY_WEBHOOK_KEY?: string;
 
+    // Rate limiting (Upstash Redis — optional)
+    UPSTASH_REDIS_REST_URL?: string;
+    UPSTASH_REDIS_REST_TOKEN?: string;
+
     // App
     NEXT_PUBLIC_APP_URL: string;
     NODE_ENV: "development" | "production" | "test";

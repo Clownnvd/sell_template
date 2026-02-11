@@ -68,6 +68,10 @@ const ServerEnvSchema = z.object({
   SEPAY_BANK_ACCOUNT: z.string().optional(),
   SEPAY_BANK_CODE: z.string().optional(),
   SEPAY_WEBHOOK_KEY: z.string().optional(),
+
+  // Rate limiting (optional — Upstash Redis)
+  UPSTASH_REDIS_REST_URL: z.string().min(1).optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 });
 
 const ClientEnvSchema = z.object({
@@ -111,6 +115,8 @@ export const serverEnv = (() => {
     SEPAY_BANK_ACCOUNT: process.env.SEPAY_BANK_ACCOUNT,
     SEPAY_BANK_CODE: process.env.SEPAY_BANK_CODE,
     SEPAY_WEBHOOK_KEY: process.env.SEPAY_WEBHOOK_KEY,
+    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
 
   if (!parsed.success) {

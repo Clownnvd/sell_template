@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
 
     logRequest(req, 200, start);
     return successResponse({
-      purchaseId: result.purchaseId,
       paymentCode: result.paymentCode,
       amount: result.amount,
       qrUrl: result.qrUrl,
@@ -78,7 +77,7 @@ export async function GET(req: NextRequest) {
   if (rateLimitResult) return rateLimitResult;
 
   try {
-    await requireAuth();
+    const session = await requireAuth();
 
     const purchaseId = req.nextUrl.searchParams.get("id");
     if (!purchaseId || !/^[a-zA-Z0-9_-]{1,100}$/.test(purchaseId)) {
@@ -86,7 +85,7 @@ export async function GET(req: NextRequest) {
       return errorResponse("Invalid purchase ID", 400, undefined, ErrorCodes.VALIDATION_ERROR);
     }
 
-    const status = await getSepayPurchaseStatus(purchaseId);
+    const status = await getSepayPurchaseStatus(purchaseId, session.user.id);
     if (!status) {
       logRequest(req, 404, getStart);
       return notFoundError("Purchase not found");

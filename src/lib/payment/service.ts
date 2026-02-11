@@ -81,7 +81,7 @@ export async function createCheckoutSession({
  */
 export async function getPurchase(userId: string) {
   "use cache";
-  cacheTag(`purchase-${userId}`);
+  cacheTag(`purchase-${userId}`, "purchases");
   cacheLife("hours");
 
   return prisma.purchase.findFirst({
@@ -105,7 +105,7 @@ export async function getPurchase(userId: string) {
  */
 export async function hasPurchased(userId: string): Promise<boolean> {
   "use cache";
-  cacheTag(`purchase-${userId}`);
+  cacheTag(`purchase-${userId}`, "purchases");
   cacheLife("hours");
 
   const purchase = await prisma.purchase.findFirst({

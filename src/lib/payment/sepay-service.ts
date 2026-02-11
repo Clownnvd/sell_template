@@ -1,7 +1,8 @@
-import { randomBytes } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import prisma from "@/lib/db";
 import { product } from "@/config/product";
 import { inviteCollaborator } from "@/lib/github/invite";
+import { logAuthEvent } from "@/lib/auth/audit-log";
 
 const PAYMENT_CODE_PREFIX = "KT";
 const PAYMENT_EXPIRY_MINUTES = 30;
@@ -57,7 +58,8 @@ export function verifySepayWebhook(authHeader: string | null): boolean {
 
   // SePay sends: "Apikey YOUR_KEY"
   const expectedHeader = `Apikey ${webhookKey}`;
-  return authHeader === expectedHeader;
+  if (authHeader.length !== expectedHeader.length) return false;
+  return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expectedHeader));
 }
 
 /**
@@ -195,6 +197,7 @@ export async function processSepayTransaction(transaction: {
             githubUsername: purchase.user.githubUsername,
           },
         });
+        logAuthEvent("github_invited", purchase.user.id);
       }
     } catch {
       // GitHub invite failure is non-fatal
@@ -207,9 +210,9 @@ export async function processSepayTransaction(transaction: {
 /**
  * Get SePay purchase status for polling
  */
-export async function getSepayPurchaseStatus(purchaseId: string) {
+export async function getSepayPurchaseStatus(purchaseId: string, userId: string) {
   const purchase = await prisma.purchase.findUnique({
-    where: { id: purchaseId },
+    where: { id: purchaseId, userId },
     select: {
       id: true,
       status: true,

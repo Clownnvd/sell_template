@@ -1,16 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
+ * GET /api/ready
  * Readiness probe — checks that the app can serve traffic.
  * Unlike /api/health (liveness), this verifies:
  * 1. Database is reachable
  * 2. Required environment variables are present
+ * @auth None
+ * @rateLimit 60/min
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.relaxed, "ready");
+  if (rateLimitResult) return rateLimitResult;
+
   const checks: Record<string, "ok" | "fail"> = {};
 
   // 1. Database connectivity

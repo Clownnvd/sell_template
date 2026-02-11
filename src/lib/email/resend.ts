@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import type React from "react";
+import { logger } from "@/lib/api/logger";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -26,6 +27,8 @@ export async function sendReactEmail(params: SendReactEmailParams) {
 // ✅ helper to "fire-and-forget" safely
 export function sendReactEmailSafe(params: SendReactEmailParams) {
   void sendReactEmail(params).catch((err) => {
-    console.error("[email] send failed:", err);
+    logger.error("email_send_failed", {
+      error: err instanceof Error ? err.message : "Unknown error",
+    });
   });
 }

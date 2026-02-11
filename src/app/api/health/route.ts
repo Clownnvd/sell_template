@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,8 +9,12 @@ export const dynamic = "force-dynamic";
  * GET /api/health
  * Liveness probe — checks database connectivity.
  * @auth None
+ * @rateLimit 60/min
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimitResult = await rateLimit(req, rateLimitPresets.relaxed, "health");
+  if (rateLimitResult) return rateLimitResult;
+
   const start = Date.now();
 
   try {
@@ -24,7 +29,7 @@ export async function GET() {
         timestamp: new Date().toISOString(),
       },
       {
-        headers: { "Cache-Control": "no-store" },
+        headers: { "Cache-Control": "public, max-age=5, s-maxage=5" },
       }
     );
   } catch {
@@ -39,7 +44,7 @@ export async function GET() {
       },
       {
         status: 503,
-        headers: { "Cache-Control": "no-store" },
+        headers: { "Cache-Control": "public, max-age=5, s-maxage=5" },
       }
     );
   }

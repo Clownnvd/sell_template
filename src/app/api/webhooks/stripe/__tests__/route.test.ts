@@ -16,6 +16,11 @@ vi.mock("@/lib/github/invite", () => ({
   inviteCollaborator: vi.fn().mockResolvedValue({ success: true, alreadyCollaborator: false }),
 }));
 
+// Mock audit logging
+vi.mock("@/lib/auth/audit-log", () => ({
+  logAuthEvent: vi.fn(),
+}));
+
 function recentTimestamp(): number {
   return Math.floor(Date.now() / 1000);
 }

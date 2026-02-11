@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { WelcomeEmail } from "@/lib/email/templates/email-template";
 import { Resend } from "resend";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth/server";
 import { verifyCsrf } from "@/lib/csrf";
 import {
   successResponse,
@@ -31,7 +31,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 /**
  * POST /api/send
  * Sends a welcome email to the authenticated user via Resend.
- * @auth Required
+ * @auth Required (requireAuth)
  * @rateLimit 5/min (per user)
  */
 export async function POST(req: NextRequest) {
@@ -40,19 +40,15 @@ export async function POST(req: NextRequest) {
   const csrfResult = verifyCsrf(req);
   if (csrfResult) return csrfResult;
 
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user?.id) {
-    logRequest(req, 401, start);
-    return unauthorizedError("Authentication required");
-  }
-
-  const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "send-email", session.user.id);
-  if (rateLimitResult) return rateLimitResult;
-
-  const userEmail = session.user.email;
-  const userName = session.user.name?.split(" ")[0] || "there";
-
   try {
+    const session = await requireAuth();
+
+    const rateLimitResult = await rateLimit(req, rateLimitPresets.strict, "send-email", session.user.id);
+    if (rateLimitResult) return rateLimitResult;
+
+    const userEmail = session.user.email;
+    const userName = session.user.name?.split(" ")[0] || "there";
+
     const { data, error } = await withTimeout(
       resend.emails.send({
         from: `King Template <${serverEnv.RESEND_FROM || "onboarding@resend.dev"}>`,
@@ -70,8 +66,12 @@ export async function POST(req: NextRequest) {
 
     logRequest(req, 200, start, session.user.id);
     return successResponse({ sent: true, id: data?.id }, 200, NO_CACHE_HEADERS);
-  } catch {
-    logRequest(req, 500, start, session.user.id);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      logRequest(req, 401, start);
+      return unauthorizedError();
+    }
+    logRequest(req, 500, start);
     return serverError("Failed to send email");
   }
 }

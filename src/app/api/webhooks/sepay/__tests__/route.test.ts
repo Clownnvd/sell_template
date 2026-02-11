@@ -10,6 +10,11 @@ vi.mock("@/lib/rate-limit", () => ({
   },
 }));
 
+// Mock audit logging
+vi.mock("@/lib/auth/audit-log", () => ({
+  logAuthEvent: vi.fn(),
+}));
+
 // Mock SePay service
 const mockVerifySepayWebhook = vi.fn();
 const mockProcessSepayTransaction = vi.fn();
@@ -18,19 +23,21 @@ vi.mock("@/lib/payment/sepay-service", () => ({
   processSepayTransaction: (...args: unknown[]) => mockProcessSepayTransaction(...args),
 }));
 
-const validTransaction = {
-  id: 12345,
-  gateway: "MBBank",
-  transactionDate: "2025-01-15",
-  accountNumber: "123456789",
-  code: null,
-  content: "KT-ABCDEFGH payment",
-  transferType: "in",
-  transferAmount: 2500000,
-  accumulated: 2500000,
-  subAccount: null,
-  referenceCode: "REF123",
-};
+function makeValidTransaction() {
+  return {
+    id: 12345,
+    gateway: "MBBank",
+    transactionDate: new Date().toISOString(),
+    accountNumber: "123456789",
+    code: null,
+    content: "KT-ABCDEFGH payment",
+    transferType: "in",
+    transferAmount: 2500000,
+    accumulated: 2500000,
+    subAccount: null,
+    referenceCode: "REF123",
+  };
+}
 
 describe("POST /api/webhooks/sepay", () => {
   beforeEach(() => {
@@ -47,7 +54,7 @@ describe("POST /api/webhooks/sepay", () => {
         "content-type": "application/json",
         authorization: "Apikey wrong_key",
       },
-      body: JSON.stringify(validTransaction),
+      body: JSON.stringify(makeValidTransaction()),
     });
     const response = await POST(req);
 
@@ -82,7 +89,7 @@ describe("POST /api/webhooks/sepay", () => {
         "content-type": "application/json",
         authorization: "Apikey valid_key",
       },
-      body: JSON.stringify(validTransaction),
+      body: JSON.stringify(makeValidTransaction()),
     });
     const response = await POST(req);
     const data = await response.json();
@@ -105,7 +112,7 @@ describe("POST /api/webhooks/sepay", () => {
         "content-type": "application/json",
         authorization: "Apikey valid_key",
       },
-      body: JSON.stringify(validTransaction),
+      body: JSON.stringify(makeValidTransaction()),
     });
     const response = await POST(req);
     const data = await response.json();
@@ -119,5 +126,25 @@ describe("POST /api/webhooks/sepay", () => {
         transferAmount: 2500000,
       })
     );
+  });
+
+  it("rejects transaction with old date (replay protection)", async () => {
+    mockVerifySepayWebhook.mockReturnValue(true);
+
+    const oldTransaction = makeValidTransaction();
+    oldTransaction.transactionDate = "2020-01-01T00:00:00.000Z";
+
+    const { POST } = await import("../route");
+    const req = new NextRequest("http://localhost/api/webhooks/sepay", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Apikey valid_key",
+      },
+      body: JSON.stringify(oldTransaction),
+    });
+    const response = await POST(req);
+
+    expect(response.status).toBe(400);
   });
 });

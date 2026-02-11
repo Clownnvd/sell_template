@@ -38,6 +38,7 @@ export const auth = betterAuth({
     requireEmailVerification: Boolean(process.env.RESEND_API_KEY),
 
     sendResetPassword: async ({ user, url }) => {
+      logAuthEvent("password_reset_request", user.id);
       await sendReactEmail({
         to: user.email,
         subject: "Reset your password",

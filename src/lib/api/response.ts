@@ -17,7 +17,10 @@ export const ErrorCodes = {
 } as const;
 
 /** Cache headers for API responses — prevents proxy/browser caching of user data */
-export const NO_CACHE_HEADERS = { "Cache-Control": "private, no-store" } as const;
+export const NO_CACHE_HEADERS: Record<string, string> = {
+  "Cache-Control": "private, no-store",
+  ...(process.env.NODE_ENV === "development" && { "X-Cache-Debug": "no-store" }),
+};
 
 /** Max request body size in bytes (1 MB) */
 const MAX_BODY_SIZE = 1_048_576;

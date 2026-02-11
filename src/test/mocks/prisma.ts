@@ -17,6 +17,7 @@ export const prismaMock = {
     findUnique: vi.fn(),
     create: vi.fn(),
   },
+  $queryRaw: vi.fn(),
 };
 
 vi.mock("@/lib/db", () => ({

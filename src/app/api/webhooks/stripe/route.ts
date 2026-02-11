@@ -7,6 +7,7 @@ import { inviteCollaborator } from "@/lib/github/invite";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { serverEnv } from "@/lib/env";
 import { logger } from "@/lib/api/logger";
+import { logAuthEvent } from "@/lib/auth/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,7 +56,10 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch {
+  } catch (error) {
+    logger.warn("stripe_signature_failed", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return NextResponse.json({ received: false }, { status: 400 });
   }
 
@@ -122,7 +126,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (existingPurchase) {
     // Retry GitHub invite if it failed previously
     if (!existingPurchase.githubInviteSent && user.githubUsername) {
-      await tryInviteCollaborator(existingPurchase.id, user.githubUsername);
+      await tryInviteCollaborator(existingPurchase.id, user.githubUsername, userId);
     }
     return;
   }
@@ -146,8 +150,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     },
   });
 
+  logAuthEvent("purchase_completed", userId);
+
   if (user.githubUsername) {
-    await tryInviteCollaborator(purchase.id, user.githubUsername);
+    await tryInviteCollaborator(purchase.id, user.githubUsername, userId);
   }
 
   revalidateTagWithLog(`purchase-${userId}`, "stripe-webhook:checkout-completed");
@@ -157,6 +163,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function tryInviteCollaborator(
   purchaseId: string,
   githubUsername: string,
+  userId: string,
 ): Promise<void> {
   try {
     const result = await inviteCollaborator(githubUsername);
@@ -165,6 +172,7 @@ async function tryInviteCollaborator(
         where: { id: purchaseId },
         data: { githubInviteSent: true, githubUsername },
       });
+      logAuthEvent("github_invited", userId);
     }
   } catch (error) {
     // GitHub invite failure is non-fatal — user can retry via dashboard

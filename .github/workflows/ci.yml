@@ -77,6 +77,10 @@ jobs:
       - name: Run tests
         run: pnpm test:run
 
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
   build:
     name: Build
     runs-on: ubuntu-latest

@@ -8,6 +8,9 @@ import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { FinalCTASection } from "@/components/landing/final-cta-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 
+// ISR: Revalidate landing page every hour
+export const revalidate = 3600;
+
 // Below-fold client sections — lazy loaded for bundle splitting
 const HowItWorksSection = dynamic(() =>
   import("@/components/landing/how-it-works-section").then((m) => ({

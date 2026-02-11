@@ -1,39 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { revalidatePathWithLog, revalidateTagWithLog } from "@/lib/cache-utils";
 import { rateLimit, rateLimitPresets } from "@/lib/rate-limit";
 import { verifySepayWebhook, processSepayTransaction } from "@/lib/payment/sepay-service";
 import prisma from "@/lib/db";
 import { logger } from "@/lib/api/logger";
+import { logAuthEvent } from "@/lib/auth/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const sepayTransactionSchema = {
-  isValid(data: unknown): data is SepayTransaction {
-    if (!data || typeof data !== "object") return false;
-    const obj = data as Record<string, unknown>;
-    return (
-      typeof obj.id === "number" &&
-      typeof obj.transferType === "string" &&
-      typeof obj.transferAmount === "number" &&
-      typeof obj.content === "string"
-    );
-  },
-};
+/** SePay webhook transaction schema — Zod validation with strict mode */
+const sepayTransactionSchema = z.object({
+  id: z.number(),
+  gateway: z.string(),
+  transactionDate: z.string(),
+  accountNumber: z.string(),
+  code: z.string().nullable(),
+  content: z.string(),
+  transferType: z.string(),
+  transferAmount: z.number(),
+  accumulated: z.number(),
+  subAccount: z.string().nullable(),
+  referenceCode: z.string(),
+}).strict();
 
-interface SepayTransaction {
-  id: number;
-  gateway: string;
-  transactionDate: string;
-  accountNumber: string;
-  code: string | null;
-  content: string;
-  transferType: string;
-  transferAmount: number;
-  accumulated: number;
-  subAccount: string | null;
-  referenceCode: string;
-}
+type SepayTransaction = z.infer<typeof sepayTransactionSchema>;
+
+/** Max age for SePay transactions (30 minutes) */
+const MAX_TRANSACTION_AGE_MS = 30 * 60 * 1000;
 
 async function isEventProcessed(transactionId: string): Promise<boolean> {
   const existing = await prisma.webhookEvent.findUnique({
@@ -68,11 +63,18 @@ export async function POST(req: NextRequest) {
   let transaction: SepayTransaction;
   try {
     const body = await req.json();
-    if (!sepayTransactionSchema.isValid(body)) {
+    const parsed = sepayTransactionSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json({ success: false }, { status: 400 });
     }
-    transaction = body;
+    transaction = parsed.data;
   } catch {
+    return NextResponse.json({ success: false }, { status: 400 });
+  }
+
+  // Replay protection: reject transactions older than 30 minutes
+  const txDate = new Date(transaction.transactionDate);
+  if (!isNaN(txDate.getTime()) && Date.now() - txDate.getTime() > MAX_TRANSACTION_AGE_MS) {
     return NextResponse.json({ success: false }, { status: 400 });
   }
 
@@ -92,7 +94,8 @@ export async function POST(req: NextRequest) {
     });
 
     await markEventProcessed(eventId);
-    if (result.userId) {
+    if (result.matched && result.userId) {
+      logAuthEvent("purchase_completed", result.userId);
       revalidateTagWithLog(`purchase-${result.userId}`, "sepay-webhook:transaction-completed");
     }
     revalidatePathWithLog("/dashboard", "sepay-webhook:transaction-completed");
