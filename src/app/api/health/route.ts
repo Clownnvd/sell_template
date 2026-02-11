@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   } catch {
     const latencyMs = Date.now() - start;
 
-    return NextResponse.json(
+    return addRateLimitHeaders(req, NextResponse.json(
       {
         status: "unhealthy",
         database: "disconnected",
@@ -46,6 +46,6 @@ export async function GET(req: NextRequest) {
         status: 503,
         headers: { "Cache-Control": "public, max-age=5, s-maxage=5" },
       }
-    );
+    ));
   }
 }
