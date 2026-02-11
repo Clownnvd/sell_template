@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/server";
-import prisma from "@/lib/db";
+import { getPurchase } from "@/lib/payment/service";
 import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { successResponse, unauthorizedError, serverError, NO_CACHE_HEADERS } from "@/lib/api/response";
 import { logRequest } from "@/lib/api/logger";
@@ -24,30 +24,15 @@ export async function GET(req: NextRequest) {
     const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "purchase-get", userId);
     if (rateLimitResult) return rateLimitResult;
 
-    const purchase = await prisma.purchase.findUnique({
-      where: {
-        one_purchase_per_product: { userId, productType: "KING_TEMPLATE" },
-      },
-      select: {
-        id: true,
-        status: true,
-        productType: true,
-        amount: true,
-        githubInviteSent: true,
-        githubUsername: true,
-        purchasedAt: true,
-      },
-    });
-
-    const completedPurchase = purchase?.status === "COMPLETED" ? purchase : null;
+    const purchase = await getPurchase(userId);
 
     logRequest(req, 200, start, userId);
     return addRateLimitHeaders(req, successResponse({
-      purchased: !!completedPurchase,
-      purchase: completedPurchase
+      purchased: !!purchase,
+      purchase: purchase
         ? {
-            ...completedPurchase,
-            purchasedAt: completedPurchase.purchasedAt?.toISOString() ?? null,
+            ...purchase,
+            purchasedAt: purchase.purchasedAt?.toISOString() ?? null,
           }
         : null,
     }, 200, NO_CACHE_HEADERS));

@@ -32,42 +32,57 @@ describe("Purchase Service", () => {
   });
 
   describe("getPurchase", () => {
-    it("returns purchase record when exists", async () => {
+    it("returns purchase record when exists and completed", async () => {
       const mockPurchase = {
         id: "purchase_1",
         status: "COMPLETED",
         productType: "KING_TEMPLATE",
         amount: 9900,
-        currency: "USD",
         githubInviteSent: false,
         githubUsername: null,
         purchasedAt: new Date(),
-        createdAt: new Date(),
       };
-      prismaMock.purchase.findFirst.mockResolvedValue(mockPurchase);
+      prismaMock.purchase.findUnique.mockResolvedValue(mockPurchase);
 
       const { getPurchase } = await import("../service");
       const result = await getPurchase("user_1");
 
       expect(result).toEqual(mockPurchase);
-      expect(prismaMock.purchase.findFirst).toHaveBeenCalledWith({
-        where: { userId: "user_1", status: "COMPLETED" },
+      expect(prismaMock.purchase.findUnique).toHaveBeenCalledWith({
+        where: {
+          one_purchase_per_product: { userId: "user_1", productType: "KING_TEMPLATE" },
+        },
         select: {
           id: true,
           status: true,
           productType: true,
           amount: true,
-          currency: true,
           githubInviteSent: true,
           githubUsername: true,
           purchasedAt: true,
-          createdAt: true,
         },
       });
     });
 
     it("returns null when no purchase exists", async () => {
-      prismaMock.purchase.findFirst.mockResolvedValue(null);
+      prismaMock.purchase.findUnique.mockResolvedValue(null);
+
+      const { getPurchase } = await import("../service");
+      const result = await getPurchase("user_1");
+
+      expect(result).toBeNull();
+    });
+
+    it("returns null when purchase is not completed", async () => {
+      prismaMock.purchase.findUnique.mockResolvedValue({
+        id: "purchase_1",
+        status: "PENDING",
+        productType: "KING_TEMPLATE",
+        amount: 9900,
+        githubInviteSent: false,
+        githubUsername: null,
+        purchasedAt: null,
+      });
 
       const { getPurchase } = await import("../service");
       const result = await getPurchase("user_1");

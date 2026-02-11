@@ -82,23 +82,24 @@ export async function createCheckoutSession({
 export async function getPurchase(userId: string) {
   return unstable_cache(
     async () => {
-      return prisma.purchase.findFirst({
-        where: { userId, status: "COMPLETED" },
+      const purchase = await prisma.purchase.findUnique({
+        where: {
+          one_purchase_per_product: { userId, productType: "KING_TEMPLATE" },
+        },
         select: {
           id: true,
           status: true,
           productType: true,
           amount: true,
-          currency: true,
           githubInviteSent: true,
           githubUsername: true,
           purchasedAt: true,
-          createdAt: true,
         },
       });
+      return purchase?.status === "COMPLETED" ? purchase : null;
     },
     [`purchase-${userId}`],
-    { revalidate: 3600, tags: [`purchase-${userId}`, "purchases"] },
+    { revalidate: 3600, tags: [`purchase-${userId}`] },
   )();
 }
 
@@ -115,6 +116,6 @@ export async function hasPurchased(userId: string): Promise<boolean> {
       return !!purchase;
     },
     [`has-purchased-${userId}`],
-    { revalidate: 3600, tags: [`purchase-${userId}`, "purchases"] },
+    { revalidate: 3600, tags: [`purchase-${userId}`] },
   )();
 }

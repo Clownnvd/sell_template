@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { rateLimit, rateLimitPresets, addRateLimitHeaders } from "@/lib/rate-limit";
 import { logAuthEvent } from "@/lib/auth/audit-log";
+import { NO_CACHE_HEADERS } from "@/lib/api/response";
 import { Redis } from "@upstash/redis";
 
 export const runtime = "nodejs";
@@ -141,6 +142,11 @@ export async function POST(req: NextRequest) {
 
   const response = await authPost(req);
 
+  // Auth session data must never be cached by proxies/CDN
+  for (const [key, value] of Object.entries(NO_CACHE_HEADERS)) {
+    response.headers.set(key, value);
+  }
+
   // Track login failures for sign-in requests
   if (isSignInPath(pathname)) {
     if (response.status !== 200) {
@@ -157,5 +163,9 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const rateLimitResult = await rateLimit(req, rateLimitPresets.standard, "auth-get");
   if (rateLimitResult) return rateLimitResult;
-  return addRateLimitHeaders(req, await authGet(req));
+  const response = await authGet(req);
+  for (const [key, value] of Object.entries(NO_CACHE_HEADERS)) {
+    response.headers.set(key, value);
+  }
+  return addRateLimitHeaders(req, response);
 }

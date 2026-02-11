@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { requireUserId } from "@/lib/auth/server";
+import { getPurchase } from "@/lib/payment/service";
 import { DashboardPage } from "@/components/dashboard/dashboard-page";
 
 export default async function Page() {
@@ -10,23 +11,10 @@ export default async function Page() {
       where: { id: userId },
       select: { name: true },
     }),
-    prisma.purchase.findUnique({
-      where: {
-        one_purchase_per_product: { userId, productType: "KING_TEMPLATE" },
-      },
-      select: {
-        id: true,
-        status: true,
-        productType: true,
-        amount: true,
-        githubInviteSent: true,
-        githubUsername: true,
-        purchasedAt: true,
-      },
-    }),
+    getPurchase(userId),
   ]);
 
-  const completedPurchase = purchase?.status === "COMPLETED" ? {
+  const completedPurchase = purchase ? {
     id: purchase.id,
     status: purchase.status as "COMPLETED",
     productType: purchase.productType,
